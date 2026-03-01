@@ -666,15 +666,22 @@
     <div class="form-group">
       <label class="form-label">Strategy</label>
       <select class="form-control" id="fStrategy">
-        <option value="CBO">CBO</option>
+        <option value="1 CBO">1 CBO</option>
         <option value="Huge CBO">Huge CBO</option>
       </select>
     </div>
     <div class="form-group">
       <label class="form-label">Entry Type</label>
       <select class="form-control" id="fEntryType">
+        <option value="Entry after pullback">Entry after pullback</option>
         <option value="Direct Entry">Direct Entry</option>
-        <option value="Pullback Entry">Pullback Entry</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Structure</label>
+      <select class="form-control" id="fStructure">
+        <option value="Same">Same</option>
+        <option value="Different">Different</option>
       </select>
     </div>
     <div class="form-group">
@@ -687,13 +694,6 @@
           <option value="PM">PM</option>
         </select>
       </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Structure</label>
-      <select class="form-control" id="fStructure">
-        <option value="Same">Same</option>
-        <option value="Different">Different</option>
-      </select>
     </div>
     <div class="form-group">
       <label class="form-label">Current Level (numeric)</label>
@@ -735,35 +735,46 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
   import {
     getFirestore, collection, addDoc, getDocs, updateDoc,
-    deleteDoc, doc, query, orderBy
+    deleteDoc, doc, query, orderBy, onSnapshot
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-  /* ── ⚠️  REPLACE these values with your Firebase project config ──────── */
+  /* ══════════════════════════════════════════════════════════
+     ⚠️  PASTE YOUR FIREBASE CONFIG HERE
+     Go to Firebase Console → Project Settings → Your apps → Config
+     ══════════════════════════════════════════════════════════ */
   const firebaseConfig = {
-    apiKey:            "YOUR_API_KEY",
-    authDomain:        "YOUR_AUTH_DOMAIN",
-    projectId:         "YOUR_PROJECT_ID",
-    storageBucket:     "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId:             "YOUR_APP_ID"
+   apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
+  authDomain: "trade-tracker-71027.firebaseapp.com",
+  projectId: "trade-tracker-71027",
+  storageBucket: "trade-tracker-71027.firebasestorage.app",
+  messagingSenderId: "702315259190",
+  appId: "1:702315259190:web:e2716abba4080558dc3f97",
+  measurementId: "G-Y6C9270SJ5"
   };
-  /* ─────────────────────────────────────────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════════ */
 
-  let db       = null;
-  let trades   = [];
+  let db        = null;
+  let trades    = [];
   let editingId = null;
   let currentPeriod = 'all';
   let charts = {};
+  let unsubscribe = null;   // real-time listener handle
 
-  // Try to init Firebase only if config is filled in
+  /* ── Firebase init ───────────────────────────── */
+  const isConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
   try {
-    if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    if (isConfigured) {
       const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      document.getElementById('syncStatus').textContent = '🟢 Firebase';
+      document.getElementById('syncStatus').textContent = '🟢 Synced';
       document.getElementById('syncStatus').style.color = 'var(--accent)';
+    } else {
+      document.getElementById('syncStatus').textContent = '🔴 Local';
     }
-  } catch(e) { console.warn('Firebase init failed', e); }
+  } catch(e) {
+    console.warn('Firebase init failed', e);
+    document.getElementById('syncStatus').textContent = '🔴 Error';
+  }
 
   /* ── Helpers ─────────────────────────────────── */
   window.showToast = msg => {
@@ -832,19 +843,36 @@
     return n;
   };
 
-  /* ── Load ────────────────────────────────────── */
+  /* ── Load — real-time listener ──────────────────── */
   async function loadTrades() {
     if (db) {
+      // Real-time listener: any change on any device updates instantly
       try {
-        const snap = await getDocs(query(collection(db,'trades'), orderBy('date','asc')));
-        trades = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-        localStorage.setItem('tt_trades', JSON.stringify(trades));
+        const q = query(collection(db, 'trades'), orderBy('date', 'asc'));
+        unsubscribe = onSnapshot(q, (snap) => {
+          trades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          localStorage.setItem('tt_trades', JSON.stringify(trades));
+          populateSectors();
+          renderTrades();
+          renderStats();
+          // Update sync indicator briefly
+          const s = document.getElementById('syncStatus');
+          s.textContent = '🟢 Synced';
+          s.style.color = 'var(--accent)';
+        }, (err) => {
+          console.warn('Snapshot error', err);
+          // Fall back to local
+          trades = JSON.parse(localStorage.getItem('tt_trades') || '[]');
+          populateSectors(); renderTrades(); renderStats();
+          document.getElementById('syncStatus').textContent = '🔴 Local';
+        });
+        return; // onSnapshot handles rendering
       } catch(e) {
-        trades = JSON.parse(localStorage.getItem('tt_trades')||'[]');
+        console.warn('Firebase listen failed', e);
       }
-    } else {
-      trades = JSON.parse(localStorage.getItem('tt_trades')||'[]');
     }
+    // No Firebase — load from localStorage
+    trades = JSON.parse(localStorage.getItem('tt_trades') || '[]');
     populateSectors();
     renderTrades();
     renderStats();
@@ -942,8 +970,8 @@
       document.getElementById('fDate').value          = new Date().toISOString().slice(0,10);
       document.getElementById('fInstrument').value    = '';
       document.getElementById('fSector').value        = '';
-      document.getElementById('fStrategy').value      = 'CBO';
-      document.getElementById('fEntryType').value     = 'Direct Entry';
+      document.getElementById('fStrategy').value      = '1 CBO';
+      document.getElementById('fEntryType').value     = 'Entry after pullback';
       document.getElementById('fStructure').value     = 'Same';
       document.getElementById('fLevel').value         = '';
       document.getElementById('fExitCategory').value  = 'Price hit Candle HL and Stayed Above';
