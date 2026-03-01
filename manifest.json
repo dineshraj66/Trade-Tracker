@@ -9,7 +9,10 @@
   "theme_color": "#0a0f1e",
   "orientation": "portrait-primary",
   "lang": "en",
-  "categories": ["finance", "productivity"],
+  "categories": [
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "icon-192.png",

@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="TradeTracker" />
-  <link rel="apple-touch-icon" href="https://placehold.co/192x192/00e5b0/0a0f1e?text=TT" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -1117,6 +1117,24 @@
     Object.values(charts).forEach(c=>{ try{c.destroy();}catch(e){} });
     charts = {};
   }
+
+  // Entry time bucket classifier
+  function timeBucket(entryTime) {
+    if (!entryTime) return 'Other';
+    const parts = entryTime.split(' ');
+    const hm    = (parts[0]||'').split(':');
+    let h = parseInt(hm[0])||0;
+    const m = parseInt(hm[1])||0;
+    const ap = parts[1]||'AM';
+    if (ap==='PM' && h!==12) h+=12;
+    if (ap==='AM' && h===12) h=0;
+    const mins = h*60+m;
+    if (mins >= 10*60+15 && mins <= 11*60)    return '10:15AM–11:00AM';
+    if (mins >= 11*60+15 && mins <= 12*60)    return '11:15AM–12:00PM';
+    if (mins >= 12*60+15 && mins <= 13*60)    return '12:15PM–1:00PM';
+    return 'Other';
+  }
+
   window.renderStats = function() {
     destroyCharts();
     const list = filterByPeriod(trades);
@@ -1126,23 +1144,74 @@
       return;
     }
     const total=list.length;
-    const byLevel={}, byWeek={}, byMonth={}, byEntry={}, byStruct={}, byExit={}, levelDates={};
+    const byLevel={}, byWeek={}, byMonth={}, byEntry={}, byStruct={}, byExit={};
+    const byTimeBucket={}, bySector={}, byDay={};
+    const DAY_ORDER=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
     const sorted=[...list].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
     sorted.forEach(t=>{
       const lv=t.level??0, wk=isoWeek(t.date), mo=isoMonth(t.date);
       byLevel[lv]             = (byLevel[lv]||0)+1;
       byWeek[wk]              = (byWeek[wk]||0)+1;
       byMonth[mo]             = (byMonth[mo]||0)+1;
-      byEntry[t.entryType||'?']   = (byEntry[t.entryType||'?']||0)+1;
-      byStruct[t.structure||'?']  = (byStruct[t.structure||'?']||0)+1;
-      byExit[t.exitCategory||'?'] = (byExit[t.exitCategory||'?']||0)+1;
-      if(!levelDates[lv]) levelDates[lv]=[];
-      levelDates[lv].push(t.date);
+      byEntry[t.entryType||'?']    = (byEntry[t.entryType||'?']||0)+1;
+      byStruct[t.structure||'?']   = (byStruct[t.structure||'?']||0)+1;
+      byExit[t.exitCategory||'?']  = (byExit[t.exitCategory||'?']||0)+1;
+      const tb = timeBucket(t.entryTime);
+      byTimeBucket[tb] = (byTimeBucket[tb]||0)+1;
+      const sec = t.sector || 'Unknown';
+      bySector[sec] = (bySector[sec]||0)+1;
+      const day = fmtDay(t.date);
+      byDay[day] = (byDay[day]||0)+1;
     });
+
     const datesUniq=[...new Set(sorted.map(t=>t.date).filter(Boolean))];
     const waitDays=[];
     for(let i=1;i<datesUniq.length;i++) waitDays.push(daysBetween(datesUniq[i-1],datesUniq[i]));
     const avgWait=waitDays.length?(waitDays.reduce((a,b)=>a+b,0)/waitDays.length).toFixed(1):'—';
+
+    // Exit category sorted high to low by count
+    const exitSorted = Object.entries(byExit).sort((a,b)=>b[1]-a[1]);
+
+    // Sector sorted high to low
+    const sectorSorted = Object.entries(bySector).sort((a,b)=>b[1]-a[1]);
+
+    // Day sorted by DAY_ORDER
+    const daySorted = DAY_ORDER
+      .filter(d => byDay[d])
+      .map(d => [d, byDay[d]]);
+
+    // Time bucket order
+    const TB_ORDER = ['10:15AM–11:00AM','11:15AM–12:00PM','12:15PM–1:00PM','Other'];
+    const timeSorted = TB_ORDER.filter(k=>byTimeBucket[k]).map(k=>[k,byTimeBucket[k]]);
+
+    // Chart config factory — with datalabels on top of bars
+    const barCfg = (color) => ({
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          anchor:'end', align:'end',
+          color:'#e8edf5',
+          font:{size:9, weight:'bold'},
+          formatter: v => v
+        }
+      },
+      scales:{
+        x:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}},
+        y:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}, beginAtZero:true}
+      },
+      layout:{ padding:{ top:16 } },
+      responsive:true
+    });
+
+    const lineCfg = {
+      plugins:{legend:{display:false}, datalabels:{display:false}},
+      scales:{
+        x:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}},
+        y:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}}
+      },
+      responsive:true
+    };
 
     el.innerHTML=`
       <div class="stats-section">
@@ -1156,27 +1225,62 @@
           <div class="stat-card"><div class="stat-val">${Object.keys(byWeek).length}</div><div class="stat-lbl">Wks Active</div></div>
         </div>
       </div>
+
       <div class="stats-section">
         <div class="stats-section-title">Trades by Level</div>
-        <div class="chart-box"><canvas id="chartLevel" height="150"></canvas></div>
+        <div class="chart-box"><canvas id="chartLevel" height="160"></canvas></div>
       </div>
       <div class="stats-section">
         <div class="stats-section-title">Trades by Week</div>
-        <div class="chart-box"><canvas id="chartWeek" height="150"></canvas></div>
+        <div class="chart-box"><canvas id="chartWeek" height="160"></canvas></div>
       </div>
       <div class="stats-section">
         <div class="stats-section-title">Trades by Month</div>
-        <div class="chart-box"><canvas id="chartMonth" height="150"></canvas></div>
+        <div class="chart-box"><canvas id="chartMonth" height="160"></canvas></div>
       </div>
       <div class="stats-section">
         <div class="stats-section-title">Trading Day Gaps (weekends excluded)</div>
         <div class="chart-box" id="waitBox"><canvas id="chartWait" height="150"></canvas></div>
       </div>
+
+      <div class="stats-section">
+        <div class="stats-section-title">Trades by Day of Week</div>
+        <div class="chart-box"><canvas id="chartDay" height="160"></canvas></div>
+      </div>
+
+      <div class="stats-section">
+        <div class="stats-section-title">Trades by Entry Time Slot</div>
+        <div class="chart-box"><canvas id="chartTime" height="160"></canvas></div>
+        <div style="margin-top:8px">
+          ${timeSorted.map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:10px">
+              <span style="color:var(--muted)">${k}</span>
+              <span style="color:var(--text);font-weight:700">${v} &nbsp;<span style="color:var(--muted)">${Math.round(v/total*100)}%</span></span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="stats-section">
+        <div class="stats-section-title">Trades by Sector</div>
+        <div class="chart-box"><canvas id="chartSector" height="160"></canvas></div>
+        <div style="margin-top:8px">
+          ${sectorSorted.map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:10px;color:var(--muted)">${k}</span>
+              <span style="font-size:10px;color:var(--text);font-weight:700">${v} &nbsp;<span style="color:var(--muted)">${Math.round(v/total*100)}%</span></span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
       <div class="stats-section">
         <div class="stats-section-title">Entry Type</div>
         <div class="stat-grid">
           ${Object.entries(byEntry).map(([k,v])=>`<div class="stat-card">
-            <div class="stat-val" style="font-size:18px">${v}</div><div class="stat-lbl">${k}</div>
+            <div class="stat-val" style="font-size:18px">${v}</div>
+            <div class="stat-lbl" style="margin-bottom:3px">${Math.round(v/total*100)}%</div>
+            <div class="stat-lbl">${k}</div>
             <div class="progress-bar-wrap"><div class="progress-bar" style="width:${Math.round(v/total*100)}%"></div></div>
           </div>`).join('')}
         </div>
@@ -1185,44 +1289,86 @@
         <div class="stats-section-title">Structure</div>
         <div class="stat-grid">
           ${Object.entries(byStruct).map(([k,v])=>`<div class="stat-card">
-            <div class="stat-val" style="font-size:18px">${v}</div><div class="stat-lbl">${k}</div>
+            <div class="stat-val" style="font-size:18px">${v}</div>
+            <div class="stat-lbl" style="margin-bottom:3px">${Math.round(v/total*100)}%</div>
+            <div class="stat-lbl">${k}</div>
             <div class="progress-bar-wrap"><div class="progress-bar" style="width:${Math.round(v/total*100)}%;background:var(--accent3)"></div></div>
           </div>`).join('')}
         </div>
       </div>
+
       <div class="stats-section">
         <div class="stats-section-title">Exit Category</div>
         <div class="stat-grid">
-          ${Object.entries(byExit).map(([k,v])=>`<div class="stat-card stat-card-full">
+          ${exitSorted.map(([k,v])=>`<div class="stat-card stat-card-full">
             <div style="display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:10px;color:var(--text)">${k}</span>
               <span style="font-family:var(--font-head);font-size:15px;font-weight:800;color:var(--accent2)">${v}
                 <span style="font-size:10px;color:var(--muted)">${Math.round(v/total*100)}%</span>
               </span>
             </div>
-            <div class="progress-bar-wrap" style="margin-top:6px"><div class="progress-bar" style="width:${Math.round(v/total*100)}%;background:var(--accent2)"></div></div>
+            <div class="progress-bar-wrap" style="margin-top:6px">
+              <div class="progress-bar" style="width:${Math.round(v/total*100)}%;background:var(--accent2)"></div>
+            </div>
           </div>`).join('')}
         </div>
       </div>
       <div style="height:20px"></div>`;
 
-    const cfg={
-      plugins:{legend:{display:false}},
-      scales:{
-        x:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}},
-        y:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}}
-      },
-      responsive:true
+    // Register Chart.js datalabels plugin inline
+    const datalabelsPlugin = {
+      id:'datalabels',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        chart.data.datasets.forEach((dataset, i) => {
+          const meta = chart.getDatasetMeta(i);
+          meta.data.forEach((bar, idx) => {
+            const val = dataset.data[idx];
+            if (val === undefined || val === null) return;
+            ctx.save();
+            ctx.fillStyle = '#e8edf5';
+            ctx.font = 'bold 9px Space Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(val, bar.x, bar.y - 2);
+            ctx.restore();
+          });
+        });
+      }
     };
-    charts.level=new Chart(document.getElementById('chartLevel'),{type:'bar',
-      data:{labels:Object.keys(byLevel).map(l=>'Lvl '+l),datasets:[{data:Object.values(byLevel),backgroundColor:'#00e5b0',borderRadius:6}]},options:cfg});
-    charts.week=new Chart(document.getElementById('chartWeek'),{type:'bar',
-      data:{labels:Object.keys(byWeek).map(w=>w.slice(5)),datasets:[{data:Object.values(byWeek),backgroundColor:'#7c5cfc',borderRadius:6}]},options:cfg});
-    charts.month=new Chart(document.getElementById('chartMonth'),{type:'bar',
-      data:{labels:Object.keys(byMonth),datasets:[{data:Object.values(byMonth),backgroundColor:'#ff6b35',borderRadius:6}]},options:cfg});
+
+    const mkBar = (id, labels, data, color) => new Chart(document.getElementById(id), {
+      type:'bar',
+      plugins:[datalabelsPlugin],
+      data:{
+        labels,
+        datasets:[{ data, backgroundColor:color, borderRadius:6 }]
+      },
+      options:{
+        plugins:{ legend:{display:false} },
+        scales:{
+          x:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}},
+          y:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'},beginAtZero:true}
+        },
+        layout:{ padding:{ top:18 } },
+        responsive:true
+      }
+    });
+
+    charts.level  = mkBar('chartLevel',  Object.keys(byLevel).map(l=>'Lvl '+l),   Object.values(byLevel),  '#00e5b0');
+    charts.week   = mkBar('chartWeek',   Object.keys(byWeek).map(w=>w.slice(5)),   Object.values(byWeek),   '#7c5cfc');
+    charts.month  = mkBar('chartMonth',  Object.keys(byMonth),                     Object.values(byMonth),  '#ff6b35');
+    charts.day    = mkBar('chartDay',    daySorted.map(([d])=>d.slice(0,3)),        daySorted.map(([,v])=>v),'#00d4ff');
+    charts.time   = mkBar('chartTime',   timeSorted.map(([k])=>k),                  timeSorted.map(([,v])=>v),'#fbbf24');
+    charts.sector = mkBar('chartSector', sectorSorted.map(([k])=>k),               sectorSorted.map(([,v])=>v),'#ff6b35');
+
     if(waitDays.length>1){
-      charts.wait=new Chart(document.getElementById('chartWait'),{type:'line',
-        data:{labels:waitDays.map((_,i)=>'Gap '+(i+1)),datasets:[{data:waitDays,borderColor:'#00e5b0',backgroundColor:'rgba(0,229,176,0.1)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#00e5b0'}]},options:cfg});
+      charts.wait=new Chart(document.getElementById('chartWait'),{
+        type:'line',
+        data:{labels:waitDays.map((_,i)=>'Gap '+(i+1)),
+          datasets:[{data:waitDays,borderColor:'#00e5b0',backgroundColor:'rgba(0,229,176,0.1)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#00e5b0'}]},
+        options:lineCfg
+      });
     } else {
       document.getElementById('waitBox').innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:11px">Need 2+ trade dates for gap analysis</div>';
     }
