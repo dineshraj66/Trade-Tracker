@@ -743,7 +743,7 @@
      Go to Firebase Console → Project Settings → Your apps → Config
      ══════════════════════════════════════════════════════════ */
   const firebaseConfig = {
-   apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
+    apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
   authDomain: "trade-tracker-71027.firebaseapp.com",
   projectId: "trade-tracker-71027",
   storageBucket: "trade-tracker-71027.firebasestorage.app",
@@ -890,7 +890,9 @@
     const ampm = document.getElementById('fAmpm').value;
     const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
 
-    const trade = {
+    const isNew = !editingId;
+
+    const tradeData = {
       date:         document.getElementById('fDate').value,
       instrument:   document.getElementById('fInstrument').value.trim(),
       sector:       document.getElementById('fSector').value.trim(),
@@ -902,41 +904,71 @@
       exitCategory: document.getElementById('fExitCategory').value,
       shutMachine:  document.getElementById('fShutMachine').checked,
       noPnl:        document.getElementById('fNoPnl').checked,
-      createdAt:    Date.now()
     };
 
-    if (!trade.date || !trade.instrument) { showToast('Date & Instrument required!'); return; }
+    // Only stamp createdAt on brand new trades, never on edits
+    if (isNew) tradeData.createdAt = Date.now();
+
+    if (!tradeData.date || !tradeData.instrument) {
+      showToast('Date & Instrument required!');
+      return;
+    }
 
     if (db) {
+      // Firebase mode: write to Firestore only.
+      // The onSnapshot listener automatically updates trades[] and re-renders.
+      // Never mutate trades[] here — that causes double-updates and data corruption.
       try {
-        if (editingId) await updateDoc(doc(db,'trades',editingId), trade);
-        else           await addDoc(collection(db,'trades'), trade);
-      } catch(e) { console.error(e); }
-    }
-    if (editingId) {
-      const i = trades.findIndex(t=>t.id===editingId);
-      if (i!==-1) trades[i] = { ...trades[i], ...trade };
+        if (editingId) {
+          await updateDoc(doc(db, 'trades', editingId), tradeData);
+        } else {
+          await addDoc(collection(db, 'trades'), tradeData);
+        }
+        closeModal();
+        if (isNew) launchCelebration();
+        else showToast('Trade updated!');
+      } catch(e) {
+        console.error('Firebase save error', e);
+        showToast('Save failed — check connection.');
+      }
     } else {
-      trades.push({ id:'local_'+Date.now(), ...trade });
-    }
-    localStorage.setItem('tt_trades', JSON.stringify(trades));
-    const isNew = !editingId;
-    closeModal(); populateSectors(); renderTrades(); renderStats();
-    if (isNew) {
-      launchCelebration();
-    } else {
-      showToast('Trade updated!');
+      // Local-only mode: mutate array directly then re-render
+      if (editingId) {
+        const i = trades.findIndex(t => t.id === editingId);
+        if (i !== -1) trades[i] = { ...trades[i], ...tradeData };
+      } else {
+        trades.push({ id: 'local_' + Date.now(), ...tradeData });
+      }
+      localStorage.setItem('tt_trades', JSON.stringify(trades));
+      closeModal();
+      populateSectors(); renderTrades(); renderStats();
+      if (isNew) launchCelebration();
+      else showToast('Trade updated!');
     }
   };
 
   /* ── Delete ──────────────────────────────────── */
   window.deleteTrade = async function() {
     if (!editingId || !confirm('Delete this trade?')) return;
-    if (db) { try { await deleteDoc(doc(db,'trades',editingId)); } catch(e){} }
-    trades = trades.filter(t=>t.id!==editingId);
-    localStorage.setItem('tt_trades', JSON.stringify(trades));
-    closeModal(); populateSectors(); renderTrades(); renderStats();
-    showToast('Trade deleted.');
+    const idToDelete = editingId;
+    if (db) {
+      // Firebase mode: delete from Firestore, onSnapshot handles UI update
+      try {
+        await deleteDoc(doc(db, 'trades', idToDelete));
+        closeModal();
+        showToast('Trade deleted.');
+      } catch(e) {
+        console.error('Delete error', e);
+        showToast('Delete failed — check connection.');
+      }
+    } else {
+      // Local-only mode
+      trades = trades.filter(t => t.id !== idToDelete);
+      localStorage.setItem('tt_trades', JSON.stringify(trades));
+      closeModal();
+      populateSectors(); renderTrades(); renderStats();
+      showToast('Trade deleted.');
+    }
   };
 
   /* ── Modal open/close ────────────────────────── */
