@@ -224,7 +224,7 @@
       border: 1px solid var(--border);
       border-top: none;
       border-radius: 0 0 var(--radius) var(--radius);
-      padding: 12px 14px;
+      padding: 14px 16px;
       margin-bottom: 12px;
       cursor: pointer;
       transition: border-color 0.2s;
@@ -232,11 +232,12 @@
     .trade-card:active { border-color: var(--accent3); }
     .trade-instrument {
       font-family: var(--font-head);
-      font-size: 15px;
-      font-weight: 700;
+      font-size: 20px;
+      font-weight: 800;
       color: var(--text);
+      letter-spacing: -0.3px;
     }
-    .trade-time { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .trade-time { font-size: 13px; color: var(--muted); margin-top: 4px; font-weight: 700; }
     .trade-tags {
       display: flex;
       flex-wrap: wrap;
@@ -622,13 +623,12 @@
 
   /* ── ⚠️  REPLACE these values with your Firebase project config ──────── */
   const firebaseConfig = {
-    apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
-  authDomain: "trade-tracker-71027.firebaseapp.com",
-  projectId: "trade-tracker-71027",
-  storageBucket: "trade-tracker-71027.firebasestorage.app",
-  messagingSenderId: "702315259190",
-  appId: "1:702315259190:web:e2716abba4080558dc3f97",
-  measurementId: "G-Y6C9270SJ5"
+    apiKey:            "YOUR_API_KEY",
+    authDomain:        "YOUR_AUTH_DOMAIN",
+    projectId:         "YOUR_PROJECT_ID",
+    storageBucket:     "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId:             "YOUR_APP_ID"
   };
   /* ─────────────────────────────────────────────────────────────────────── */
 
@@ -878,13 +878,13 @@
         banner.className = 'trade-banner';
         banner.innerHTML = `
           <div class="trade-banner-left">
-            <span class="trade-num">Trade #${tradeNum}</span>
+            <span class="trade-num">Trade ${tradeNum}</span>
             <div>
               <div class="trade-banner-date">${fmtDate(t.date)}</div>
               <div class="trade-banner-day">${fmtDay(t.date)}</div>
             </div>
           </div>
-          <span class="tag-lvl-inline">Lvl ${lv}</span>`;
+          <span class="tag-lvl-inline">Level ${lv}</span>`;
         el.appendChild(banner);
 
         // Card
@@ -892,23 +892,8 @@
         card.className = 'trade-card';
         card.onclick = () => openModal(t.id);
         card.innerHTML = `
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-            <div>
-              <div class="trade-instrument">${t.instrument||'—'}</div>
-              <div class="trade-time">${t.entryTime||'—'}</div>
-            </div>
-          </div>
-          <div class="trade-tags">
-            ${t.sector     ? `<span class="tag tag-sector">${t.sector}</span>` : ''}
-            <span class="tag tag-strategy">${t.strategy||''}</span>
-            <span class="tag tag-entry">${t.entryType||''}</span>
-            ${t.structure  ? `<span class="tag tag-structure">${t.structure}</span>` : ''}
-            <span class="tag tag-exit">${t.exitCategory||''}</span>
-          </div>
-          ${t.shutMachine||t.noPnl ? `<div class="trade-meta">
-            ${t.shutMachine ? '<span>🔴 Shut Machine</span>' : ''}
-            ${t.noPnl       ? '<span>🚫 No PNL</span>'       : ''}
-          </div>` : ''}`;
+          <div class="trade-instrument">${t.instrument||'—'}</div>
+          <div class="trade-time">${t.entryTime||'—'}</div>`;
         el.appendChild(card);
       });
     });
