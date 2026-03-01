@@ -731,21 +731,21 @@
     .target-modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.75);
-      z-index: 200;
+      background: rgba(0,0,0,0.78);
+      z-index: 300;
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 24px;
     }
     .target-modal-overlay.open { display: flex; }
     .target-modal {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 28px 22px;
+      padding: 28px 24px 24px;
       width: 100%;
-      max-width: 320px;
+      max-width: 280px;
       animation: cardPop 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards;
     }
     .target-modal-title {
@@ -753,35 +753,35 @@
       font-size: 16px;
       font-weight: 800;
       color: var(--accent);
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
-    .target-input-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .target-input {
-      flex: 1;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      color: var(--text);
-      font-family: var(--font-head);
-      font-size: 28px;
-      font-weight: 800;
-      text-align: center;
-      outline: none;
-      -webkit-appearance: none;
-    }
-    .target-input:focus { border-color: var(--accent); }
     .target-hint {
       font-size: 10px;
       color: var(--muted);
-      margin-bottom: 16px;
-      line-height: 1.5;
+      margin-bottom: 18px;
+      line-height: 1.6;
     }
+    .target-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 12px;
+      color: var(--text);
+      font-family: var(--font-head);
+      font-size: 32px;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+      margin-bottom: 16px;
+      -webkit-appearance: none;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .target-input::-webkit-outer-spin-button,
+    .target-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .target-input:focus { border-color: var(--accent); }
+    .target-input-row { display: none; }
   </style>
 </head>
 <body>
@@ -882,11 +882,9 @@
 <div class="target-modal-overlay" id="targetModalOverlay">
   <div class="target-modal">
     <div class="target-modal-title">🎯 Set Target Trades</div>
-    <div class="target-hint">Enter your total trade target for the sample size. Completed trades are counted automatically from your trade log.</div>
-    <div class="target-input-row">
-      <input type="number" class="target-input" id="targetInput" min="1" placeholder="100" />
-    </div>
-    <button class="btn btn-primary" onclick="saveTarget()" style="margin-top:0">Save Target</button>
+    <div class="target-hint">Your total trade target for the sample size. Completed count is auto-calculated from your trade log.</div>
+    <input type="number" class="target-input" id="targetInput" min="1" placeholder="100" inputmode="numeric" />
+    <button class="btn btn-primary" onclick="saveTarget()" style="margin-top:0;width:100%">Save Target</button>
     <button class="btn" onclick="closeTargetModal()" style="width:100%;margin-top:8px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)">Cancel</button>
   </div>
 </div>
@@ -995,7 +993,7 @@
   import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
   import {
     getFirestore, collection, addDoc, getDocs, updateDoc,
-    deleteDoc, doc, query, orderBy, onSnapshot
+    deleteDoc, doc, getDoc, setDoc, query, orderBy, onSnapshot
   } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
   /* ══════════════════════════════════════════════════════════
@@ -1003,7 +1001,7 @@
      Go to Firebase Console → Project Settings → Your apps → Config
      ══════════════════════════════════════════════════════════ */
   const firebaseConfig = {
-    apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
+     apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
   authDomain: "trade-tracker-71027.firebaseapp.com",
   projectId: "trade-tracker-71027",
   storageBucket: "trade-tracker-71027.firebasestorage.app",
@@ -1301,19 +1299,42 @@
   function filterByPeriod(list) { return list; }
 
   /* ── Target modal ────────────────────────────── */
+  /* ── Target — kept in memory + localStorage + Firestore ── */
+  let targetTrades = parseInt(localStorage.getItem('tt_target')) || 0;
+
+  // On startup, pull from Firestore once if available
+  async function syncTargetFromFirestore() {
+    if (!db) return;
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'target'));
+      if (snap.exists()) {
+        targetTrades = snap.data().value || 0;
+        localStorage.setItem('tt_target', targetTrades);
+        renderHome();
+      }
+    } catch(e) { console.warn('syncTarget error', e); }
+  }
+
   window.openTargetModal = function() {
-    const saved = parseInt(localStorage.getItem('tt_target'))||0;
-    document.getElementById('targetInput').value = saved || '';
+    document.getElementById('targetInput').value = targetTrades || '';
     document.getElementById('targetModalOverlay').classList.add('open');
     setTimeout(()=>document.getElementById('targetInput').focus(), 100);
   };
   window.closeTargetModal = function() {
     document.getElementById('targetModalOverlay').classList.remove('open');
   };
-  window.saveTarget = function() {
-    const val = parseInt(document.getElementById('targetInput').value)||0;
+  window.saveTarget = async function() {
+    const val = parseInt(document.getElementById('targetInput').value) || 0;
     if (val < 1) { alert('Please enter a valid target (min 1)'); return; }
+    // 1. Update in-memory immediately
+    targetTrades = val;
+    // 2. Save to localStorage
     localStorage.setItem('tt_target', val);
+    // 3. Save to Firestore (background, non-blocking)
+    if (db) {
+      try { await setDoc(doc(db, 'settings', 'target'), { value: val }); }
+      catch(e) { console.warn('saveTarget Firestore error', e); }
+    }
     closeTargetModal();
     renderHome();
     showToast('Target set to ' + val + ' trades!');
@@ -1325,7 +1346,7 @@
   /* ── Render Home ─────────────────────────────── */
   window.renderHome = function() {
     const total     = trades.length;
-    const target    = parseInt(localStorage.getItem('tt_target'))||0;
+    const target    = targetTrades;
     const pct       = target > 0 ? Math.min(100, Math.round(total/target*100)) : 0;
     const CIRCUM    = 2 * Math.PI * 80;   // r=80
 
@@ -1701,6 +1722,7 @@
     new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
   switchTab('home');
   loadTrades();
+  syncTargetFromFirestore(); // pull target from Firestore once
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
