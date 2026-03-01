@@ -587,6 +587,201 @@
       80%  { opacity: 1; }
       100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.5); }
     }
+
+    /* ─── Home Page ──────────────────────────────── */
+    .home-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 28px 0 20px;
+    }
+    .home-greeting {
+      font-family: var(--font-head);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .home-tagline {
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    /* Progress ring */
+    .ring-wrap {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      margin-bottom: 8px;
+    }
+    .ring-wrap svg {
+      transform: rotate(-90deg);
+    }
+    .ring-bg   { fill: none; stroke: var(--border); stroke-width: 14; }
+    .ring-fill { fill: none; stroke-width: 14; stroke-linecap: round;
+                 transition: stroke-dashoffset 1s cubic-bezier(0.4,0,0.2,1);
+                 stroke: url(#ringGrad); }
+    .ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .ring-pct {
+      font-family: var(--font-head);
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .ring-sub {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+    .ring-counts {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .ring-counts strong { color: var(--text); }
+
+    /* Edit target button */
+    .edit-target-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+      margin-bottom: 28px;
+    }
+    .edit-target-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Home info cards */
+    .home-cards {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .home-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .home-card-val {
+      font-family: var(--font-head);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .home-card-lbl {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 5px;
+    }
+    .home-card.accent2 .home-card-val { color: var(--accent2); }
+    .home-card.accent3 .home-card-val { color: var(--accent3); }
+    .home-card.warn    .home-card-val { color: var(--warn); }
+
+    /* Quick action button */
+    .home-action {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font-head);
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+      margin-top: 4px;
+    }
+    .home-action:active { background: #00c99a; }
+
+    /* Target modal */
+    .target-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .target-modal-overlay.open { display: flex; }
+    .target-modal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 22px;
+      width: 100%;
+      max-width: 320px;
+      animation: cardPop 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    .target-modal-title {
+      font-family: var(--font-head);
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .target-input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .target-input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--text);
+      font-family: var(--font-head);
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .target-input:focus { border-color: var(--accent); }
+    .target-hint {
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
@@ -602,17 +797,69 @@
 
 <!-- ─── Tabs ────────────────────────────────────── -->
 <nav class="tabs">
+  <button class="tab-btn" onclick="switchTab('home')"   id="tab-home"  >🏠 Home</button>
   <button class="tab-btn" onclick="switchTab('stats')"  id="tab-stats" >📊 Stats</button>
   <button class="tab-btn" onclick="switchTab('trades')" id="tab-trades">📋 Trades</button>
 </nav>
 
+<!-- ─── Home Page ────────────────────────────────── -->
+<div class="page" id="page-home">
+  <div class="home-hero">
+    <div class="home-greeting">Welcome back</div>
+    <div class="home-tagline">Stay Disciplined.<br>Trust the Process.</div>
+
+    <!-- Gradient def for ring -->
+    <div class="ring-wrap">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#00e5b0"/>
+            <stop offset="100%" style="stop-color:#7c5cfc"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg"   cx="90" cy="90" r="80"/>
+        <circle class="ring-fill" cx="90" cy="90" r="80"
+          id="ringFill"
+          stroke-dasharray="502.65"
+          stroke-dashoffset="502.65"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-pct"  id="ringPct">0%</div>
+        <div class="ring-sub">Progress</div>
+      </div>
+    </div>
+
+    <div class="ring-counts" id="ringCounts">0 / 0 trades completed</div>
+
+    <button class="edit-target-btn" onclick="openTargetModal()">
+      ✏️ Set Target Trades
+    </button>
+
+    <div class="home-cards">
+      <div class="home-card warn">
+        <div class="home-card-val" id="homeCurrentLevel">—</div>
+        <div class="home-card-lbl">Current Level</div>
+      </div>
+      <div class="home-card accent3">
+        <div class="home-card-val" id="homeTotalTrades">0</div>
+        <div class="home-card-lbl">Total Trades</div>
+      </div>
+      <div class="home-card accent2">
+        <div class="home-card-val" id="homeThisWeek">0</div>
+        <div class="home-card-lbl">This Week</div>
+      </div>
+      <div class="home-card">
+        <div class="home-card-val" id="homeThisMonth">0</div>
+        <div class="home-card-lbl">This Month</div>
+      </div>
+    </div>
+
+    <button class="home-action" onclick="switchTab('trades')">+ Log New Trade</button>
+  </div>
+</div>
+
 <!-- ─── Stats Page ───────────────────────────────── -->
 <div class="page" id="page-stats">
-  <div class="period-filter">
-    <button class="period-btn active" onclick="setPeriod('all',this)">All</button>
-    <button class="period-btn" onclick="setPeriod('week',this)">This Week</button>
-    <button class="period-btn" onclick="setPeriod('month',this)">This Month</button>
-  </div>
   <div id="statsContent">
     <div class="loading"><div class="spinner"></div>Loading stats…</div>
   </div>
@@ -630,6 +877,19 @@
 
 <!-- ─── Toast ────────────────────────────────────── -->
 <div class="toast" id="toast"></div>
+
+<!-- ─── Target Trades Modal ──────────────────────── -->
+<div class="target-modal-overlay" id="targetModalOverlay">
+  <div class="target-modal">
+    <div class="target-modal-title">🎯 Set Target Trades</div>
+    <div class="target-hint">Enter your total trade target for the sample size. Completed trades are counted automatically from your trade log.</div>
+    <div class="target-input-row">
+      <input type="number" class="target-input" id="targetInput" min="1" placeholder="100" />
+    </div>
+    <button class="btn btn-primary" onclick="saveTarget()" style="margin-top:0">Save Target</button>
+    <button class="btn" onclick="closeTargetModal()" style="width:100%;margin-top:8px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)">Cancel</button>
+  </div>
+</div>
 
 <!-- ─── Celebration Overlay ──────────────────────── -->
 <div class="celebrate-overlay" id="celebrateOverlay">
@@ -855,6 +1115,7 @@
           populateSectors();
           renderTrades();
           renderStats();
+          renderHome();
           // Update sync indicator briefly
           const s = document.getElementById('syncStatus');
           s.textContent = '🟢 Synced';
@@ -876,6 +1137,7 @@
     populateSectors();
     renderTrades();
     renderStats();
+    renderHome();
   }
 
   function populateSectors() {
@@ -1032,28 +1294,88 @@
     document.getElementById('tab-'+tab).classList.add('active');
     const fab = document.getElementById('fabBtn');
     tab==='trades' ? fab.classList.remove('fab-hidden') : fab.classList.add('fab-hidden');
+    if (tab==='home') renderHome();
   };
 
-  /* ── Period filter ───────────────────────────── */
-  window.setPeriod = function(period, btn) {
-    currentPeriod = period;
-    document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    renderStats();
+  /* ── filterByPeriod (used internally) ─────────── */
+  function filterByPeriod(list) { return list; }
+
+  /* ── Target modal ────────────────────────────── */
+  window.openTargetModal = function() {
+    const saved = parseInt(localStorage.getItem('tt_target'))||0;
+    document.getElementById('targetInput').value = saved || '';
+    document.getElementById('targetModalOverlay').classList.add('open');
+    setTimeout(()=>document.getElementById('targetInput').focus(), 100);
   };
-  function filterByPeriod(list) {
-    if (currentPeriod==='all') return list;
-    const now = new Date();
-    return list.filter(t=>{
-      if (!t.date) return false;
-      const d = new Date(t.date+'T00:00:00');
-      if (currentPeriod==='week') {
-        const s=new Date(now); s.setDate(now.getDate()-now.getDay()+1); s.setHours(0,0,0,0);
-        return d>=s;
+  window.closeTargetModal = function() {
+    document.getElementById('targetModalOverlay').classList.remove('open');
+  };
+  window.saveTarget = function() {
+    const val = parseInt(document.getElementById('targetInput').value)||0;
+    if (val < 1) { alert('Please enter a valid target (min 1)'); return; }
+    localStorage.setItem('tt_target', val);
+    closeTargetModal();
+    renderHome();
+    showToast('Target set to ' + val + ' trades!');
+  };
+  document.getElementById('targetModalOverlay').addEventListener('click', e => {
+    if (e.target===document.getElementById('targetModalOverlay')) closeTargetModal();
+  });
+
+  /* ── Render Home ─────────────────────────────── */
+  window.renderHome = function() {
+    const total     = trades.length;
+    const target    = parseInt(localStorage.getItem('tt_target'))||0;
+    const pct       = target > 0 ? Math.min(100, Math.round(total/target*100)) : 0;
+    const CIRCUM    = 2 * Math.PI * 80;   // r=80
+
+    // Progress ring
+    const fill = document.getElementById('ringFill');
+    if (fill) {
+      const offset = CIRCUM - (pct/100)*CIRCUM;
+      fill.style.strokeDashoffset = offset;
+    }
+    const ringPct = document.getElementById('ringPct');
+    if (ringPct) ringPct.textContent = pct + '%';
+
+    const ringCounts = document.getElementById('ringCounts');
+    if (ringCounts) {
+      if (target > 0) {
+        ringCounts.innerHTML = `<strong>${total}</strong> / <strong>${target}</strong> trades completed`;
+      } else {
+        ringCounts.innerHTML = `<strong>${total}</strong> trades logged &nbsp;&middot;&nbsp; tap ✏️ to set target`;
       }
-      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
-    });
-  }
+    }
+
+    // Current level — max level in trades
+    const levels = trades.map(t => parseInt(t.level)||0).filter(l=>l>0);
+    const currentLevel = levels.length ? Math.max(...levels) : '—';
+    const el = document.getElementById('homeCurrentLevel');
+    if (el) el.textContent = currentLevel;
+
+    // Total trades
+    const etEl = document.getElementById('homeTotalTrades');
+    if (etEl) etEl.textContent = total;
+
+    // This week
+    const now = new Date();
+    const sow = new Date(now); sow.setDate(now.getDate()-now.getDay()+1); sow.setHours(0,0,0,0);
+    const weekCount = trades.filter(t=>{
+      if(!t.date) return false;
+      return new Date(t.date+'T00:00:00') >= sow;
+    }).length;
+    const weekEl = document.getElementById('homeThisWeek');
+    if (weekEl) weekEl.textContent = weekCount;
+
+    // This month
+    const monthCount = trades.filter(t=>{
+      if(!t.date) return false;
+      const d=new Date(t.date+'T00:00:00');
+      return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    }).length;
+    const monthEl = document.getElementById('homeThisMonth');
+    if (monthEl) monthEl.textContent = monthCount;
+  };
 
   /* ── Render Trades ───────────────────────────── */
   window.renderTrades = function() {
@@ -1377,7 +1699,7 @@
   /* ── Init ────────────────────────────────────── */
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
-  switchTab('stats');
+  switchTab('home');
   loadTrades();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
