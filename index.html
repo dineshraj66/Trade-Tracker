@@ -782,6 +782,105 @@
     .target-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
     .target-input:focus { border-color: var(--accent); }
     .target-input-row { display: none; }
+
+    /* ─── Holidays ───────────────────────────────── */
+    .next-holiday {
+      width: 100%;
+      background: linear-gradient(135deg, rgba(0,229,176,0.1) 0%, rgba(124,92,252,0.1) 100%);
+      border: 1px solid rgba(0,229,176,0.3);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .next-holiday-icon { font-size: 28px; flex-shrink: 0; }
+    .next-holiday-label {
+      font-size: 9px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+    .next-holiday-name {
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .next-holiday-date {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .next-holiday-days {
+      margin-left: auto;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .next-holiday-days-num {
+      font-family: var(--font-head);
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .next-holiday-days-lbl {
+      font-size: 8px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .holiday-list-section {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .holiday-list-title {
+      font-family: var(--font-head);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-left: 3px solid var(--accent3);
+      padding-left: 8px;
+      margin-bottom: 8px;
+    }
+    .holiday-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+    }
+    .holiday-row:last-child { border-bottom: none; }
+    .holiday-row.past { opacity: 0.4; }
+    .holiday-row.today { background: rgba(0,229,176,0.06); margin: 0 -4px; padding: 8px 4px; border-radius: 6px; }
+    .holiday-row-left { display: flex; align-items: center; gap: 10px; }
+    .holiday-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--accent3);
+    }
+    .holiday-dot.past    { background: var(--border); }
+    .holiday-dot.next    { background: var(--accent); box-shadow: 0 0 6px rgba(0,229,176,0.6); }
+    .holiday-name        { color: var(--text); font-weight: 700; }
+    .holiday-date-day    { color: var(--muted); font-size: 9px; margin-top: 1px; }
+    .holiday-badge {
+      font-size: 8px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+    .badge-upcoming { background: rgba(0,229,176,0.15); color: var(--accent); border: 1px solid rgba(0,229,176,0.3); }
+    .badge-past     { background: var(--bg3); color: var(--muted); border: 1px solid var(--border); }
+    .badge-long     { background: rgba(124,92,252,0.15); color: var(--accent3); border: 1px solid rgba(124,92,252,0.3); }
   </style>
 </head>
 <body>
@@ -855,6 +954,15 @@
     </div>
 
     <button class="home-action" onclick="switchTab('trades')">+ Log New Trade</button>
+
+    <!-- Next Holiday Banner -->
+    <div id="nextHolidayBanner" style="width:100%;margin-top:20px"></div>
+
+    <!-- Full Holiday List -->
+    <div class="holiday-list-section">
+      <div class="holiday-list-title">NSE Holidays 2026</div>
+      <div id="holidayList"></div>
+    </div>
   </div>
 </div>
 
@@ -1001,13 +1109,12 @@
      Go to Firebase Console → Project Settings → Your apps → Config
      ══════════════════════════════════════════════════════════ */
   const firebaseConfig = {
-     apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
-  authDomain: "trade-tracker-71027.firebaseapp.com",
-  projectId: "trade-tracker-71027",
-  storageBucket: "trade-tracker-71027.firebasestorage.app",
-  messagingSenderId: "702315259190",
-  appId: "1:702315259190:web:e2716abba4080558dc3f97",
-  measurementId: "G-Y6C9270SJ5"
+    apiKey:            "YOUR_API_KEY",
+    authDomain:        "YOUR_AUTH_DOMAIN",
+    projectId:         "YOUR_PROJECT_ID",
+    storageBucket:     "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId:             "YOUR_APP_ID"
   };
   /* ══════════════════════════════════════════════════════════ */
 
@@ -1343,8 +1450,98 @@
     if (e.target===document.getElementById('targetModalOverlay')) closeTargetModal();
   });
 
+
+  /* ── NSE Holidays 2026 ──────────────────────── */
+  const NSE_HOLIDAYS_2026 = [
+    { date:'2026-01-15', name:'Municipal Corp Elections (Maharashtra)', long:false },
+    { date:'2026-01-26', name:'Republic Day', long:true },
+    { date:'2026-03-03', name:'Holi', long:false },
+    { date:'2026-03-26', name:'Shri Ram Navami', long:false },
+    { date:'2026-03-31', name:'Shri Mahavir Jayanti', long:false },
+    { date:'2026-04-03', name:'Good Friday', long:true },
+    { date:'2026-04-14', name:'Dr. Baba Saheb Ambedkar Jayanti', long:false },
+    { date:'2026-05-01', name:'Maharashtra Day', long:true },
+    { date:'2026-05-28', name:'Bakri Eid', long:false },
+    { date:'2026-06-26', name:'Moharram', long:true },
+    { date:'2026-09-14', name:'Ganesh Chaturthi', long:true },
+    { date:'2026-10-02', name:'Mahatma Gandhi Jayanti', long:true },
+    { date:'2026-10-20', name:'Dussehra', long:false },
+    { date:'2026-11-10', name:'Diwali - Balipratipada', long:false },
+    { date:'2026-11-24', name:'Prakash Gurpurb Sri Guru Nanak Dev', long:false },
+    { date:'2026-12-25', name:'Christmas', long:true },
+  ];
+
+  function renderHolidays() {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    // Find next upcoming holiday
+    const upcoming = NSE_HOLIDAYS_2026.filter(h => {
+      const d = new Date(h.date + 'T00:00:00');
+      return d >= today && d.getDay() !== 0 && d.getDay() !== 6;
+    });
+    const next = upcoming[0] || null;
+
+    // Next holiday banner
+    const bannerEl = document.getElementById('nextHolidayBanner');
+    if (bannerEl) {
+      if (next) {
+        const nd = new Date(next.date + 'T00:00:00');
+        const diff = Math.round((nd - today) / (1000*60*60*24));
+        const dayName = nd.toLocaleDateString('en-IN',{weekday:'long'});
+        const dateStr = nd.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+        const label = diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'Next Holiday';
+        bannerEl.innerHTML = \`
+          <div class="next-holiday">
+            <div class="next-holiday-icon">🏖️</div>
+            <div>
+              <div class="next-holiday-label">\${label}</div>
+              <div class="next-holiday-name">\${next.name}</div>
+              <div class="next-holiday-date">\${dayName}, \${dateStr}</div>
+            </div>
+            <div class="next-holiday-days">
+              <div class="next-holiday-days-num">\${diff === 0 ? '🎉' : diff}</div>
+              <div class="next-holiday-days-lbl">\${diff === 0 ? 'Today' : diff === 1 ? 'day' : 'days'}</div>
+            </div>
+          </div>\`;
+      } else {
+        bannerEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:11px;padding:10px 0">No more holidays in 2026</div>';
+      }
+    }
+
+    // Full list
+    const listEl = document.getElementById('holidayList');
+    if (!listEl) return;
+    const weekdayHolidays = NSE_HOLIDAYS_2026.filter(h => { const d = new Date(h.date+'T00:00:00'); return d.getDay()!==0 && d.getDay()!==6; });
+    listEl.innerHTML = weekdayHolidays.map(h => {
+      const d = new Date(h.date + 'T00:00:00');
+      const isPast    = d < today;
+      const isNext    = next && h.date === next.date;
+      const dayName   = d.toLocaleDateString('en-IN',{weekday:'short'});
+      const dateStr   = d.toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+      const rowClass  = isPast ? 'holiday-row past' : isNext ? 'holiday-row next' : 'holiday-row';
+      const dotClass  = isPast ? 'holiday-dot past' : isNext ? 'holiday-dot next' : 'holiday-dot';
+      const badge     = h.weekend ? '' :
+                        isPast    ? '<span class="holiday-badge badge-past">Done</span>' :
+                        h.long    ? '<span class="holiday-badge badge-long">Long weekend</span>' :
+                                    '<span class="holiday-badge badge-upcoming">Upcoming</span>';
+      return \`
+        <div class="\${rowClass}">
+          <div class="holiday-row-left">
+            <span class="\${dotClass}"></span>
+            <div>
+              <div class="holiday-name">\${h.name}</div>
+              <div class="holiday-date-day">\${dayName}, \${dateStr}</div>
+            </div>
+          </div>
+          \${badge}
+        </div>\`;
+    }).join('');
+  }
+
   /* ── Render Home ─────────────────────────────── */
   window.renderHome = function() {
+    renderHolidays();
     const total     = trades.length;
     const target    = targetTrades;
     const pct       = target > 0 ? Math.min(100, Math.round(total/target*100)) : 0;
