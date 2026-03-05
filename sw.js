@@ -1,5 +1,5 @@
-/* Trade Tracker – Service Worker v2 */
-const CACHE = 'trade-tracker-v2';
+/* Trade Tracker – Service Worker v3 */
+const CACHE = 'trade-tracker-v3';
 
 const PRECACHE = [
   './index.html',
@@ -18,7 +18,7 @@ self.addEventListener('install', e => {
   );
 });
 
-/* Activate: delete old caches */
+/* Activate: delete ALL old caches, claim clients immediately */
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -27,16 +27,30 @@ self.addEventListener('activate', e => {
   );
 });
 
-/* Fetch: network-first for Firebase, cache-first for app shell */
+/* Fetch: network-first for HTML (always get fresh index.html), cache-first for assets */
 self.addEventListener('fetch', e => {
   const url = e.request.url;
 
-  // Always go network-first for Firebase
+  // Always network-first for Firebase
   if (url.includes('firebase') || url.includes('googleapis.com')) {
-    return; // let browser handle normally
+    return;
   }
 
-  // Cache-first for everything else (app shell, fonts, CDN scripts)
+  // Network-first for HTML pages — ensures latest index.html always loads
+  if (e.request.mode === 'navigate' || url.endsWith('.html')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // Cache-first for everything else (icons, fonts, CDN scripts)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -45,11 +59,6 @@ self.addEventListener('fetch', e => {
         const clone = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return res;
-      }).catch(() => {
-        // Offline fallback: serve index.html for navigation requests
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
       });
     })
   );
