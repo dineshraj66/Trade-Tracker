@@ -1491,19 +1491,19 @@
         const dayName = nd.toLocaleDateString('en-IN',{weekday:'long'});
         const dateStr = nd.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
         const label = diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : 'Next Holiday';
-        bannerEl.innerHTML = \`
+        bannerEl.innerHTML = `
           <div class="next-holiday">
             <div class="next-holiday-icon">🏖️</div>
             <div>
-              <div class="next-holiday-label">\${label}</div>
-              <div class="next-holiday-name">\${next.name}</div>
-              <div class="next-holiday-date">\${dayName}, \${dateStr}</div>
+              <div class="next-holiday-label">${label}</div>
+              <div class="next-holiday-name">${next.name}</div>
+              <div class="next-holiday-date">${dayName}, ${dateStr}</div>
             </div>
             <div class="next-holiday-days">
-              <div class="next-holiday-days-num">\${diff === 0 ? '🎉' : diff}</div>
-              <div class="next-holiday-days-lbl">\${diff === 0 ? 'Today' : diff === 1 ? 'day' : 'days'}</div>
+              <div class="next-holiday-days-num">${diff === 0 ? '🎉' : diff}</div>
+              <div class="next-holiday-days-lbl">${diff === 0 ? 'Today' : diff === 1 ? 'day' : 'days'}</div>
             </div>
-          </div>\`;
+          </div>`;
       } else {
         bannerEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:11px;padding:10px 0">No more holidays in 2026</div>';
       }
@@ -1525,17 +1525,17 @@
                         isPast    ? '<span class="holiday-badge badge-past">Done</span>' :
                         h.long    ? '<span class="holiday-badge badge-long">Long weekend</span>' :
                                     '<span class="holiday-badge badge-upcoming">Upcoming</span>';
-      return \`
-        <div class="\${rowClass}">
+      return `
+        <div class="${rowClass}">
           <div class="holiday-row-left">
-            <span class="\${dotClass}"></span>
+            <span class="${dotClass}"></span>
             <div>
-              <div class="holiday-name">\${h.name}</div>
-              <div class="holiday-date-day">\${dayName}, \${dateStr}</div>
+              <div class="holiday-name">${h.name}</div>
+              <div class="holiday-date-day">${dayName}, ${dateStr}</div>
             </div>
           </div>
-          \${badge}
-        </div>\`;
+          ${badge}
+        </div>`;
     }).join('');
   }
 
