@@ -1220,7 +1220,7 @@
      Go to Firebase Console → Project Settings → Your apps → Config
      ══════════════════════════════════════════════════════════ */
   const firebaseConfig = {
-  apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
+    apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
   authDomain: "trade-tracker-71027.firebaseapp.com",
   projectId: "trade-tracker-71027",
   storageBucket: "trade-tracker-71027.firebasestorage.app",
@@ -1310,18 +1310,21 @@
     return s.toISOString().slice(0,10);
   };
   const isoMonth = iso => iso ? iso.slice(0,7) : '';
-  const daysBetween = (d1, d2) => {
+  function daysBetween(d1, d2) {
+    // Build sets lazily at call time so they always reflect current data
+    const holidaySet = new Set((typeof NSE_HOLIDAYS_2026 !== 'undefined' ? NSE_HOLIDAYS_2026 : []).map(h => h.date));
+    const leaveSet   = new Set((typeof leaves !== 'undefined' ? leaves : []).map(l => l.date));
     let a = new Date(d1+'T00:00:00'), b = new Date(d2+'T00:00:00');
     if (a > b) [a,b]=[b,a];
-    let n=0, c=new Date(a);
-    c.setDate(c.getDate()+1);
-    while(c<b){
-      const iso = c.toISOString().slice(0,10);
-      if(c.getDay()!==0 && c.getDay()!==6 && !HOLIDAY_SET.has(iso) && !getLeaveSet().has(iso)) n++;
-      c.setDate(c.getDate()+1);
+    let n=0, cur=new Date(a);
+    cur.setDate(cur.getDate()+1);
+    while(cur<b){
+      const iso = cur.toISOString().slice(0,10);
+      if(cur.getDay()!==0 && cur.getDay()!==6 && !holidaySet.has(iso) && !leaveSet.has(iso)) n++;
+      cur.setDate(cur.getDate()+1);
     }
     return n;
-  };
+  }
 
   /* ── Load — real-time listener ──────────────────── */
   async function loadTrades() {
