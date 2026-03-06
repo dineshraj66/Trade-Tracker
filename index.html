@@ -1694,10 +1694,8 @@
         };
         const [bg,col,border] = typeColors[h.leaveType] || typeColors['Other'];
         const shortLabel = (h.leaveType||'Leave').split(' ')[0];
-        badge = isPast
-          ? `<div style="display:flex;align-items:center;gap:6px"><span class="holiday-badge badge-past">Done</span></div>`
-          : `<div style="display:flex;align-items:center;gap:6px">
-               <span class="holiday-badge" style="background:${bg};color:${col};border:1px solid ${border}">${shortLabel}</span>
+        badge = `<div style="display:flex;align-items:center;gap:6px">
+               <span class="holiday-badge" style="background:${isPast?'var(--bg3)':bg};color:${isPast?'var(--muted)':col};border:1px solid ${isPast?'var(--border)':border}">${isPast?'Done':shortLabel}</span>
                <button onclick="openLeaveModal('${h.id}')" style="background:none;border:1px solid ${border};border-radius:5px;color:${col};font-size:9px;font-weight:700;cursor:pointer;padding:3px 7px;font-family:var(--font-head)">EDIT</button>
              </div>`;
       } else {
