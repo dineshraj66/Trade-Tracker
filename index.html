@@ -1331,15 +1331,25 @@
   }
 
   function daysBetween(d1, d2) {
-    const holidaySet = new Set((typeof NSE_HOLIDAYS_2026 !== 'undefined' ? NSE_HOLIDAYS_2026 : []).map(h => h.date));
-    const leaveSet   = new Set((typeof leaves !== 'undefined' ? leaves : []).map(l => l.date));
+    const holidaySet = new Set(
+      (typeof NSE_HOLIDAYS_2026 !== 'undefined' ? NSE_HOLIDAYS_2026 : [])
+        .filter(h => { const d=new Date(h.date+'T00:00:00'); return d.getDay()!==0&&d.getDay()!==6; })
+        .map(h => h.date)
+    );
+    // Use global leaves[] — always read fresh at call time
+    const leaveSet = new Set(
+      (Array.isArray(leaves) ? leaves : []).map(l => String(l.date).trim())
+    );
     let a = new Date(d1+'T00:00:00'), b = new Date(d2+'T00:00:00');
     if (a > b) [a,b]=[b,a];
     let n=0, cur=new Date(a);
     cur.setDate(cur.getDate()+1);
     while(cur<b){
       const iso = localISO(cur);
-      if(cur.getDay()!==0 && cur.getDay()!==6 && !holidaySet.has(iso) && !leaveSet.has(iso)) n++;
+      const isWeekend  = cur.getDay()===0 || cur.getDay()===6;
+      const isHoliday  = holidaySet.has(iso);
+      const isLeave    = leaveSet.has(iso);
+      if(!isWeekend && !isHoliday && !isLeave) n++;
       cur.setDate(cur.getDate()+1);
     }
     return n;
@@ -2202,7 +2212,12 @@
 
     charts.level  = mkBar('chartLevel',  Object.keys(byLevel).map(l=>'Lvl '+l),   Object.values(byLevel),  '#00e5b0');
     charts.week   = mkBar('chartWeek',   Object.keys(byWeek).map(w=>w.slice(5)),   Object.values(byWeek),   '#7c5cfc');
-    charts.month  = mkBar('chartMonth',  Object.keys(byMonth),                     Object.values(byMonth),  '#ff6b35');
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const fmtMonthLabel = iso => {
+      const [y, m] = iso.split('-');
+      return monthNames[parseInt(m,10)-1] + ' ' + y;
+    };
+    charts.month  = mkBar('chartMonth',  Object.keys(byMonth).map(fmtMonthLabel),  Object.values(byMonth),  '#ff6b35');
     charts.day    = mkBar('chartDay',    daySorted.map(([d])=>d.slice(0,3)),        daySorted.map(([,v])=>v),'#00d4ff');
     charts.time   = mkBar('chartTime',   timeSorted.map(([k])=>k),                  timeSorted.map(([,v])=>v),'#fbbf24');
     charts.sector = mkBar('chartSector', sectorSorted.map(([k])=>k),               sectorSorted.map(([,v])=>v),'#ff6b35');
