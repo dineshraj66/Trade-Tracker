@@ -1109,13 +1109,13 @@
      Go to Firebase Console → Project Settings → Your apps → Config
      ══════════════════════════════════════════════════════════ */
   const firebaseConfig = {
-    apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
+ apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
   authDomain: "trade-tracker-71027.firebaseapp.com",
   projectId: "trade-tracker-71027",
   storageBucket: "trade-tracker-71027.firebasestorage.app",
   messagingSenderId: "702315259190",
   appId: "1:702315259190:web:e2716abba4080558dc3f97",
-  measurementId: "G-Y6C9270SJ5"
+
   };
   /* ══════════════════════════════════════════════════════════ */
 
@@ -1200,9 +1200,6 @@
     return s.toISOString().slice(0,10);
   };
   const isoMonth = iso => iso ? iso.slice(0,7) : '';
-  // Build a Set of holiday date strings for O(1) lookup
-  const HOLIDAY_SET = new Set(NSE_HOLIDAYS_2026.map(h => h.date));
-
   const daysBetween = (d1, d2) => {
     let a = new Date(d1+'T00:00:00'), b = new Date(d2+'T00:00:00');
     if (a > b) [a,b]=[b,a];
@@ -1478,6 +1475,8 @@
     { date:'2026-11-24', name:'Prakash Gurpurb Sri Guru Nanak Dev', long:false },
     { date:'2026-12-25', name:'Christmas', long:true },
   ];
+  // Build Set after array is defined
+  const HOLIDAY_SET = new Set(NSE_HOLIDAYS_2026.map(h => h.date));
 
   function renderHolidays() {
     const today = new Date();
