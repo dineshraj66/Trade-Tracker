@@ -1220,7 +1220,7 @@
      Go to Firebase Console → Project Settings → Your apps → Config
      ══════════════════════════════════════════════════════════ */
   const firebaseConfig = {
-    apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
+  apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
   authDomain: "trade-tracker-71027.firebaseapp.com",
   projectId: "trade-tracker-71027",
   storageBucket: "trade-tracker-71027.firebasestorage.app",
@@ -1776,11 +1776,24 @@
       return;
     }
     const leave = { date, comment, createdAt: Date.now() };
+
+    // Close modal immediately — don't wait for Firebase
+    closeLeaveModal();
+    showToast('Leave marked for ' + fmtDate(date));
+
     if (db) {
       try {
         await addDoc(collection(db, 'leaves'), leave);
-        // onSnapshot will update leaves[] and re-render
-      } catch(e) { console.error('saveLeave error', e); showToast('Save failed'); return; }
+        // onSnapshot will update leaves[] and re-render automatically
+      } catch(e) {
+        console.error('saveLeave Firestore error', e);
+        // Fallback: save locally so the entry isn't lost
+        leaves.push({ id: 'local_' + Date.now(), ...leave });
+        leaves.sort((a,b) => a.date.localeCompare(b.date));
+        localStorage.setItem('tt_leaves', JSON.stringify(leaves));
+        renderTrades();
+        renderHolidays();
+      }
     } else {
       leaves.push({ id: 'local_' + Date.now(), ...leave });
       leaves.sort((a,b) => a.date.localeCompare(b.date));
@@ -1788,8 +1801,6 @@
       renderTrades();
       renderHolidays();
     }
-    closeLeaveModal();
-    showToast('Leave marked for ' + fmtDate(date));
   };
   window.deleteLeave = async function(id) {
     if (!confirm('Remove this leave day?')) return;
