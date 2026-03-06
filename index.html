@@ -1054,7 +1054,7 @@
     <div class="holiday-list-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <div class="holiday-list-title" style="margin-bottom:0">Non-Trading Days 2026</div>
-        <button onclick="openLeaveModal()" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);border-radius:8px;color:var(--warn);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:var(--font-head)">+ Mark Leave</button>
+        <button onclick="openLeaveModal()" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);border-radius:8px;color:var(--warn);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:var(--font-head)">+ Add Holiday / Event</button>
       </div>
       <div id="holidayList"></div>
     </div>
@@ -1081,17 +1081,27 @@
 <!-- ─── Leave Modal ──────────────────────────────── -->
 <div class="leave-modal-overlay" id="leaveModalOverlay">
   <div class="leave-modal">
-    <div class="leave-modal-title">🏖 Mark Leave Day</div>
-    <div class="leave-modal-hint">Select the date and add a note for why you took leave.</div>
+    <div class="leave-modal-title" id="leaveModalTitle">📅 Add Holiday / Event</div>
+    <div class="leave-modal-hint">Add any non-trading day — personal leave, custom holiday, family event or other.</div>
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <select class="form-control" id="leaveType">
+        <option value="Leave (Personal)">🏖 Leave (Personal)</option>
+        <option value="Holiday (Custom)">🎉 Holiday (Custom)</option>
+        <option value="Family Event">👨‍👩‍👧 Family Event</option>
+        <option value="Other">📌 Other</option>
+      </select>
+    </div>
     <div class="form-group">
       <label class="form-label">Date</label>
       <input type="date" class="form-control" id="leaveDate" />
     </div>
     <div class="form-group">
-      <label class="form-label">Reason / Comment</label>
-      <textarea class="form-control" id="leaveComment" rows="2" placeholder="e.g. Family function, feeling unwell…" style="resize:none;font-family:var(--font-mono);font-size:12px;line-height:1.5"></textarea>
+      <label class="form-label">Title / Comment</label>
+      <textarea class="form-control" id="leaveComment" rows="2" placeholder="e.g. Diwali vacation, Kid's annual day…" style="resize:none;font-family:var(--font-mono);font-size:12px;line-height:1.5"></textarea>
     </div>
-    <button class="btn btn-primary" onclick="saveLeave()" style="width:100%;background:var(--warn);color:#000;margin-top:4px">Save Leave</button>
+    <button class="btn btn-primary" onclick="saveLeave()" style="width:100%;background:var(--warn);color:#000;margin-top:4px">Save</button>
+    <button class="btn btn-danger" id="leaveDeleteBtn" onclick="deleteLeaveFromModal()" style="width:100%;margin-top:8px;display:none">Delete</button>
     <button class="btn" onclick="closeLeaveModal()" style="width:100%;margin-top:8px;background:var(--bg3);color:var(--muted);border:1px solid var(--border)">Cancel</button>
   </div>
 </div>
@@ -1312,8 +1322,15 @@
     return s.toISOString().slice(0,10);
   };
   const isoMonth = iso => iso ? iso.slice(0,7) : '';
+  // Local ISO date string — avoids UTC offset bug (e.g. IST midnight = prev day UTC)
+  function localISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const dy = String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+dy;
+  }
+
   function daysBetween(d1, d2) {
-    // Build sets lazily at call time so they always reflect current data
     const holidaySet = new Set((typeof NSE_HOLIDAYS_2026 !== 'undefined' ? NSE_HOLIDAYS_2026 : []).map(h => h.date));
     const leaveSet   = new Set((typeof leaves !== 'undefined' ? leaves : []).map(l => l.date));
     let a = new Date(d1+'T00:00:00'), b = new Date(d2+'T00:00:00');
@@ -1321,7 +1338,7 @@
     let n=0, cur=new Date(a);
     cur.setDate(cur.getDate()+1);
     while(cur<b){
-      const iso = cur.toISOString().slice(0,10);
+      const iso = localISO(cur);
       if(cur.getDay()!==0 && cur.getDay()!==6 && !holidaySet.has(iso) && !leaveSet.has(iso)) n++;
       cur.setDate(cur.getDate()+1);
     }
@@ -1604,7 +1621,7 @@
     }).map(h => ({ ...h, type:'nse' }));
 
     const leaveItems = leaves.map(l => ({
-      date: l.date, name: 'Personal Leave', type: 'leave', id: l.id, long: false
+      date: l.date, name: l.leaveType || 'Personal Leave', comment: l.comment, type: 'leave', leaveType: l.leaveType || 'Leave (Personal)', id: l.id, long: false
     }));
 
     const allItems = [...weekdayHolidays, ...leaveItems]
@@ -1623,7 +1640,8 @@
         const dayName = nd.toLocaleDateString('en-IN',{weekday:'long'});
         const dateStr = nd.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
         const label = diff === 0 ? 'Today!' : diff === 1 ? 'Tomorrow' : next.type==='leave' ? 'Next Leave' : 'Next Holiday';
-        const icon  = next.type === 'leave' ? '🏖' : '📅';
+        const typeIcons = {'Leave (Personal)':'🏖','Holiday (Custom)':'🎉','Family Event':'👨‍👩‍👧','Other':'📌'};
+        const icon  = next.type === 'leave' ? (typeIcons[next.leaveType]||'🏖') : '📅';
         bannerEl.innerHTML = `
           <div class="next-holiday">
             <div class="next-holiday-icon">${icon}</div>
@@ -1658,11 +1676,19 @@
 
       let badge = '';
       if (h.type === 'leave') {
+        const typeColors = {
+          'Leave (Personal)'  : ['rgba(251,191,36,0.15)','var(--warn)','rgba(251,191,36,0.3)'],
+          'Holiday (Custom)'  : ['rgba(0,229,176,0.12)','var(--accent)','rgba(0,229,176,0.3)'],
+          'Family Event'      : ['rgba(124,92,252,0.12)','var(--accent3)','rgba(124,92,252,0.3)'],
+          'Other'             : ['rgba(107,122,153,0.15)','var(--muted)','rgba(107,122,153,0.3)'],
+        };
+        const [bg,col,border] = typeColors[h.leaveType] || typeColors['Other'];
+        const shortLabel = (h.leaveType||'Leave').split(' ')[0];
         badge = isPast
           ? `<div style="display:flex;align-items:center;gap:6px"><span class="holiday-badge badge-past">Done</span></div>`
           : `<div style="display:flex;align-items:center;gap:6px">
-               <span class="holiday-badge" style="background:rgba(251,191,36,0.15);color:var(--warn);border:1px solid rgba(251,191,36,0.3)">Leave</span>
-               <button onclick="deleteLeave('${h.id}')" style="background:none;border:none;color:var(--danger);font-size:14px;cursor:pointer;padding:0;line-height:1">✕</button>
+               <span class="holiday-badge" style="background:${bg};color:${col};border:1px solid ${border}">${shortLabel}</span>
+               <button onclick="openLeaveModal('${h.id}')" style="background:none;border:1px solid ${border};border-radius:5px;color:${col};font-size:9px;font-weight:700;cursor:pointer;padding:3px 7px;font-family:var(--font-head)">EDIT</button>
              </div>`;
       } else {
         badge = isPast ? '<span class="holiday-badge badge-past">Done</span>' :
@@ -1762,51 +1788,93 @@
     leaves = JSON.parse(localStorage.getItem('tt_leaves') || '[]');
   }
 
-  window.openLeaveModal = function() {
-    document.getElementById('leaveDate').value = new Date().toISOString().slice(0,10);
-    document.getElementById('leaveComment').value = '';
+  let editingLeaveId = null;
+
+  window.openLeaveModal = function(leaveId) {
+    editingLeaveId = leaveId || null;
+    if (editingLeaveId) {
+      const existing = leaves.find(l => l.id === editingLeaveId);
+      if (existing) {
+        document.getElementById('leaveDate').value    = existing.date || '';
+        document.getElementById('leaveComment').value = existing.comment || '';
+        document.getElementById('leaveType').value    = existing.leaveType || 'Leave (Personal)';
+      }
+      document.getElementById('leaveModalTitle').textContent = '✏️ Edit Event';
+      document.getElementById('leaveDeleteBtn').style.display = 'block';
+    } else {
+      document.getElementById('leaveDate').value    = new Date().toISOString().slice(0,10);
+      document.getElementById('leaveComment').value = '';
+      document.getElementById('leaveType').value    = 'Leave (Personal)';
+      document.getElementById('leaveModalTitle').textContent = '📅 Add Holiday / Event';
+      document.getElementById('leaveDeleteBtn').style.display = 'none';
+    }
     document.getElementById('leaveModalOverlay').classList.add('open');
   };
   window.closeLeaveModal = function() {
     document.getElementById('leaveModalOverlay').classList.remove('open');
   };
   window.saveLeave = async function() {
-    const date    = document.getElementById('leaveDate').value;
-    const comment = document.getElementById('leaveComment').value.trim();
+    const date      = document.getElementById('leaveDate').value;
+    const comment   = document.getElementById('leaveComment').value.trim();
+    const leaveType = document.getElementById('leaveType').value;
     if (!date) { showToast('Please select a date'); return; }
-    // Prevent duplicates
-    if (leaves.some(l => l.date === date)) {
+
+    // Prevent duplicates (skip check when editing same record)
+    if (!editingLeaveId && leaves.some(l => l.date === date)) {
       showToast('Leave already marked for this date');
       closeLeaveModal();
       return;
     }
-    const leave = { date, comment, createdAt: Date.now() };
 
-    // Close modal immediately — don't wait for Firebase
+    const leaveData = { date, comment, leaveType };
     closeLeaveModal();
-    showToast('Leave marked for ' + fmtDate(date));
 
-    if (db) {
-      try {
-        await addDoc(collection(db, 'leaves'), leave);
-        // onSnapshot will update leaves[] and re-render automatically
-      } catch(e) {
-        console.error('saveLeave Firestore error', e);
-        // Fallback: save locally so the entry isn't lost
+    if (editingLeaveId) {
+      // ── Update existing ──
+      showToast('Leave updated!');
+      if (db) {
+        try {
+          await updateDoc(doc(db, 'leaves', editingLeaveId), leaveData);
+        } catch(e) {
+          console.error('updateLeave error', e);
+          const i = leaves.findIndex(l => l.id === editingLeaveId);
+          if (i !== -1) { leaves[i] = { ...leaves[i], ...leaveData }; }
+          localStorage.setItem('tt_leaves', JSON.stringify(leaves));
+          renderTrades(); renderHolidays();
+        }
+      } else {
+        const i = leaves.findIndex(l => l.id === editingLeaveId);
+        if (i !== -1) { leaves[i] = { ...leaves[i], ...leaveData }; }
+        localStorage.setItem('tt_leaves', JSON.stringify(leaves));
+        renderTrades(); renderHolidays();
+      }
+    } else {
+      // ── Add new ──
+      showToast('Leave marked for ' + fmtDate(date));
+      const leave = { ...leaveData, leaveType, createdAt: Date.now() };
+      if (db) {
+        try {
+          await addDoc(collection(db, 'leaves'), leave);
+        } catch(e) {
+          console.error('saveLeave error', e);
+          leaves.push({ id: 'local_' + Date.now(), ...leave });
+          leaves.sort((a,b) => a.date.localeCompare(b.date));
+          localStorage.setItem('tt_leaves', JSON.stringify(leaves));
+          renderTrades(); renderHolidays();
+        }
+      } else {
         leaves.push({ id: 'local_' + Date.now(), ...leave });
         leaves.sort((a,b) => a.date.localeCompare(b.date));
         localStorage.setItem('tt_leaves', JSON.stringify(leaves));
-        renderTrades();
-        renderHolidays();
+        renderTrades(); renderHolidays();
       }
-    } else {
-      leaves.push({ id: 'local_' + Date.now(), ...leave });
-      leaves.sort((a,b) => a.date.localeCompare(b.date));
-      localStorage.setItem('tt_leaves', JSON.stringify(leaves));
-      renderTrades();
-      renderHolidays();
     }
   };
+  window.deleteLeaveFromModal = async function() {
+    if (editingLeaveId) await deleteLeave(editingLeaveId);
+    closeLeaveModal();
+  };
+
   window.deleteLeave = async function(id) {
     if (!confirm('Remove this leave day?')) return;
     if (db) {
