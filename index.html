@@ -1200,12 +1200,19 @@
     return s.toISOString().slice(0,10);
   };
   const isoMonth = iso => iso ? iso.slice(0,7) : '';
+  // Build a Set of holiday date strings for O(1) lookup
+  const HOLIDAY_SET = new Set(NSE_HOLIDAYS_2026.map(h => h.date));
+
   const daysBetween = (d1, d2) => {
     let a = new Date(d1+'T00:00:00'), b = new Date(d2+'T00:00:00');
     if (a > b) [a,b]=[b,a];
     let n=0, c=new Date(a);
     c.setDate(c.getDate()+1);
-    while(c<b){ if(c.getDay()!==0&&c.getDay()!==6) n++; c.setDate(c.getDate()+1); }
+    while(c<b){
+      const iso = c.toISOString().slice(0,10);
+      if(c.getDay()!==0 && c.getDay()!==6 && !HOLIDAY_SET.has(iso)) n++;
+      c.setDate(c.getDate()+1);
+    }
     return n;
   };
 
@@ -1780,7 +1787,7 @@
         <div class="chart-box"><canvas id="chartMonth" height="160"></canvas></div>
       </div>
       <div class="stats-section">
-        <div class="stats-section-title">Trading Day Gaps (weekends excluded)</div>
+        <div class="stats-section-title">Trading Day Gaps (weekends &amp; holidays excluded)</div>
         <div class="chart-box" id="waitBox"><canvas id="chartWait" height="150"></canvas></div>
       </div>
 
