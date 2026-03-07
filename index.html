@@ -2125,6 +2125,7 @@
     };
 
     el.innerHTML=`
+      <!-- 1. Overview -->
       <div class="stats-section">
         <div class="stats-section-title">Overview</div>
         <div class="stat-grid">
@@ -2137,54 +2138,13 @@
         </div>
       </div>
 
+      <!-- 2. Trade by Level -->
       <div class="stats-section">
-        <div class="stats-section-title">Trades by Level</div>
+        <div class="stats-section-title">Trade by Level</div>
         <div class="chart-box"><canvas id="chartLevel" height="160"></canvas></div>
       </div>
-      <div class="stats-section">
-        <div class="stats-section-title">Trades by Week</div>
-        <div class="chart-box"><canvas id="chartWeek" height="160"></canvas></div>
-      </div>
-      <div class="stats-section">
-        <div class="stats-section-title">Trades by Month</div>
-        <div class="chart-box"><canvas id="chartMonth" height="160"></canvas></div>
-      </div>
-      <div class="stats-section">
-        <div class="stats-section-title">Trading Day Gaps (weekends &amp; holidays excluded)</div>
-        <div class="chart-box" id="waitBox"><canvas id="chartWait" height="150"></canvas></div>
-      </div>
 
-      <div class="stats-section">
-        <div class="stats-section-title">Trades by Day of Week</div>
-        <div class="chart-box"><canvas id="chartDay" height="160"></canvas></div>
-      </div>
-
-      <div class="stats-section">
-        <div class="stats-section-title">Trades by Entry Time Slot</div>
-        <div class="chart-box"><canvas id="chartTime" height="160"></canvas></div>
-        <div style="margin-top:8px">
-          ${timeSorted.map(([k,v])=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:10px">
-              <span style="color:var(--muted)">${k}</span>
-              <span style="color:var(--text);font-weight:700">${v} &nbsp;<span style="color:var(--muted)">${Math.round(v/total*100)}%</span></span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="stats-section">
-        <div class="stats-section-title">Trades by Sector</div>
-        <div class="chart-box"><canvas id="chartSector" height="160"></canvas></div>
-        <div style="margin-top:8px">
-          ${sectorSorted.map(([k,v])=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
-              <span style="font-size:10px;color:var(--muted)">${k}</span>
-              <span style="font-size:10px;color:var(--text);font-weight:700">${v} &nbsp;<span style="color:var(--muted)">${Math.round(v/total*100)}%</span></span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
+      <!-- 3. Entry Type -->
       <div class="stats-section">
         <div class="stats-section-title">Entry Type</div>
         <div class="stat-grid">
@@ -2196,6 +2156,8 @@
           </div>`).join('')}
         </div>
       </div>
+
+      <!-- 4. Structure -->
       <div class="stats-section">
         <div class="stats-section-title">Structure</div>
         <div class="stat-grid">
@@ -2208,8 +2170,9 @@
         </div>
       </div>
 
+      <!-- 5. Exit Type -->
       <div class="stats-section">
-        <div class="stats-section-title">Exit Category</div>
+        <div class="stats-section-title">Exit Type</div>
         <div class="stat-grid">
           ${exitSorted.map(([k,v])=>`<div class="stat-card stat-card-full">
             <div style="display:flex;justify-content:space-between;align-items:center">
@@ -2224,6 +2187,59 @@
           </div>`).join('')}
         </div>
       </div>
+
+      <!-- 6. Trade Entry By Time -->
+      <div class="stats-section">
+        <div class="stats-section-title">Trade Entry By Time</div>
+        <div class="chart-box"><canvas id="chartTime" height="160"></canvas></div>
+        <div style="margin-top:8px">
+          ${timeSorted.map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:10px">
+              <span style="color:var(--muted)">${k}</span>
+              <span style="color:var(--text);font-weight:700">${v} &nbsp;<span style="color:var(--muted)">${Math.round(v/total*100)}%</span></span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- 7. Trading Day Gap -->
+      <div class="stats-section">
+        <div class="stats-section-title">Trading Day Gap (weekends &amp; holidays excluded)</div>
+        <div class="chart-box" id="waitBox"><canvas id="chartWait" height="150"></canvas></div>
+      </div>
+
+      <!-- 8. Trades by Day of Week -->
+      <div class="stats-section">
+        <div class="stats-section-title">Trades by Day of Week</div>
+        <div class="chart-box"><canvas id="chartDay" height="160"></canvas></div>
+      </div>
+
+      <!-- 9. Trades by Week -->
+      <div class="stats-section">
+        <div class="stats-section-title">Trades by Week</div>
+        <div class="chart-box"><canvas id="chartWeek" height="160"></canvas></div>
+      </div>
+
+      <!-- 10. Trades by Month -->
+      <div class="stats-section">
+        <div class="stats-section-title">Trades by Month</div>
+        <div class="chart-box"><canvas id="chartMonth" height="160"></canvas></div>
+      </div>
+
+      <!-- 11. Trades by Sector -->
+      <div class="stats-section">
+        <div class="stats-section-title">Trades by Sector</div>
+        <div class="chart-box"><canvas id="chartSector" height="160"></canvas></div>
+        <div style="margin-top:8px">
+          ${sectorSorted.map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:10px;color:var(--muted)">${k}</span>
+              <span style="font-size:10px;color:var(--text);font-weight:700">${v} &nbsp;<span style="color:var(--muted)">${Math.round(v/total*100)}%</span></span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
       <div style="height:20px"></div>`;
 
     // Register Chart.js datalabels plugin inline
