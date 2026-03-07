@@ -3,6 +3,7 @@ const CACHE = 'trade-tracker-v3';
 
 const PRECACHE = [
   './index.html',
+  './firebase-config.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',

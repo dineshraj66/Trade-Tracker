@@ -1052,10 +1052,14 @@
 
     <!-- Full Holiday / Leave List -->
     <div class="holiday-list-section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="holiday-list-title" style="margin-bottom:0">Non-Trading Days 2026</div>
         <button onclick="openLeaveModal()" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);border-radius:8px;color:var(--warn);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:var(--font-head)">+ Add Holiday / Event</button>
       </div>
+
+      <!-- Trading day summary cards -->
+      <div id="tradingDaySummary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px"></div>
+
       <div id="holidayList"></div>
     </div>
   </div>
@@ -1231,14 +1235,8 @@
      ⚠️  PASTE YOUR FIREBASE CONFIG HERE
      Go to Firebase Console → Project Settings → Your apps → Config
      ══════════════════════════════════════════════════════════ */
-  const firebaseConfig = {
-    apiKey: "AIzaSyCr5O3rDc-UfazAwnqTS8KOEvn22ksHu3U",
-  authDomain: "trade-tracker-71027.firebaseapp.com",
-  projectId: "trade-tracker-71027",
-  storageBucket: "trade-tracker-71027.firebasestorage.app",
-  messagingSenderId: "702315259190",
-  appId: "1:702315259190:web:e2716abba4080558dc3f97",
-  };
+  // Firebase config loaded from separate file — edit firebase-config.js
+  import { firebaseConfig } from './firebase-config.js';
   /* ══════════════════════════════════════════════════════════ */
 
   let db        = null;
@@ -1623,6 +1621,66 @@
   function renderHolidays() {
     const today = new Date();
     today.setHours(0,0,0,0);
+
+    // ── Trading day summary calculation ──────────────────
+    const summaryEl = document.getElementById('tradingDaySummary');
+    if (summaryEl) {
+      // All weekdays in 2026
+      let totalWeekdays = 0;
+      const d = new Date('2026-01-01T00:00:00');
+      const end = new Date('2027-01-01T00:00:00');
+      while (d < end) {
+        if (d.getDay() !== 0 && d.getDay() !== 6) totalWeekdays++;
+        d.setDate(d.getDate() + 1);
+      }
+
+      // All NSE weekday holidays in 2026
+      const nseCount = NSE_HOLIDAYS_2026.filter(h => {
+        const hd = new Date(h.date + 'T00:00:00');
+        return hd.getDay() !== 0 && hd.getDay() !== 6;
+      }).length;
+
+      // All custom leaves/events
+      const customCount = leaves.length;
+
+      // Total trading days = weekdays - NSE holidays - custom events
+      const totalTradingDays = totalWeekdays - nseCount - customCount;
+
+      // Pending = future weekdays excluding future NSE holidays and future custom events
+      let pending = 0;
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const nseSet = new Set(NSE_HOLIDAYS_2026.map(h => h.date));
+      const leaveSet = new Set(leaves.map(l => String(l.date).trim()));
+      const p = new Date(tomorrow);
+      while (p < end) {
+        const iso = localISO(p);
+        if (p.getDay() !== 0 && p.getDay() !== 6 && !nseSet.has(iso) && !leaveSet.has(iso)) pending++;
+        p.setDate(p.getDate() + 1);
+      }
+
+      // Elapsed trading days so far (excluding today)
+      const elapsed = totalTradingDays - pending;
+
+      const cardStyle = (bg, col, border) =>
+        `background:${bg};border:1px solid ${border};border-radius:10px;padding:12px 8px;text-align:center`;
+      const valStyle = `font-family:var(--font-head);font-size:22px;font-weight:800;line-height:1`;
+      const lblStyle = `font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-top:4px`;
+
+      summaryEl.innerHTML = `
+        <div style="${cardStyle('rgba(0,229,176,0.08)','var(--accent)','rgba(0,229,176,0.2)')}">
+          <div style="${valStyle};color:var(--accent)">${totalTradingDays}</div>
+          <div style="${lblStyle}">Total<br>Trading Days</div>
+        </div>
+        <div style="${cardStyle('rgba(107,122,153,0.08)','var(--muted)','var(--border)')}">
+          <div style="${valStyle};color:var(--text)">${elapsed}</div>
+          <div style="${lblStyle}">Days<br>Elapsed</div>
+        </div>
+        <div style="${cardStyle('rgba(124,92,252,0.08)','var(--accent3)','rgba(124,92,252,0.2)')}">
+          <div style="${valStyle};color:var(--accent3)">${pending}</div>
+          <div style="${lblStyle}">Days<br>Pending</div>
+        </div>`;
+    }
 
     // Build unified list: NSE holidays + personal leaves, sorted by date
     const weekdayHolidays = NSE_HOLIDAYS_2026.filter(h => {
