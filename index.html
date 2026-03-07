@@ -2221,7 +2221,8 @@
       <!-- 7. Trading Day Gap -->
       <div class="stats-section">
         <div class="stats-section-title">Trading Day Gap (weekends &amp; holidays excluded)</div>
-        <div class="chart-box" id="waitBox"><canvas id="chartWait" height="150"></canvas></div>
+        <div class="chart-box" id="waitBox"><canvas id="chartWait" height="160"></canvas></div>
+        <div id="waitBreakdown" style="margin-top:8px"></div>
       </div>
 
       <!-- 8. Trades by Day of Week -->
@@ -2313,12 +2314,33 @@
     charts.sector = mkBar('chartSector', sectorSorted.map(([k])=>k),               sectorSorted.map(([,v])=>v),'#ff6b35');
 
     if(waitDays.length>1){
-      charts.wait=new Chart(document.getElementById('chartWait'),{
-        type:'line',
-        data:{labels:waitDays.map((_,i)=>'Gap '+(i+1)),
-          datasets:[{data:waitDays,borderColor:'#00e5b0',backgroundColor:'rgba(0,229,176,0.1)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#00e5b0'}]},
-        options:lineCfg
-      });
+      // Count frequency of each gap value
+      const gapFreq = {};
+      waitDays.forEach(g => { gapFreq[g] = (gapFreq[g]||0)+1; });
+      // Sort high to low by frequency
+      const gapSorted = Object.entries(gapFreq)
+        .sort((a,b) => b[1]-a[1])
+        .map(([gap, cnt]) => ({ gap: Number(gap), cnt }));
+      const gapTotal = waitDays.length;
+
+      charts.wait = mkBar(
+        'chartWait',
+        gapSorted.map(g => g.gap + (g.gap===1?' day':' days')),
+        gapSorted.map(g => g.cnt),
+        '#00e5b0'
+      );
+
+      // Breakdown list
+      const bdEl = document.getElementById('waitBreakdown');
+      if (bdEl) {
+        bdEl.innerHTML = gapSorted.map(({gap, cnt}) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;color:var(--muted)">${gap} ${gap===1?'day':'days'} gap</span>
+            <span style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent)">
+              ${cnt} <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">&nbsp;${Math.round(cnt/gapTotal*100)}%</span>
+            </span>
+          </div>`).join('');
+      }
     } else {
       document.getElementById('waitBox').innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:11px">Need 2+ trade dates for gap analysis</div>';
     }
