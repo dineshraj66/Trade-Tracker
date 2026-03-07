@@ -2055,7 +2055,7 @@
       return;
     }
     const total=list.length;
-    const byLevel={}, byWeek={}, byMonth={}, byEntry={}, byStruct={}, byExit={};
+    const byLevel={}, byWeek={}, byMonth={}, byEntry={}, byStruct={}, byExit={}, byStrategy={};
     const byTimeBucket={}, bySector={}, byDay={};
     const DAY_ORDER=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 
@@ -2067,6 +2067,7 @@
       byMonth[mo]             = (byMonth[mo]||0)+1;
       byEntry[t.entryType||'?']    = (byEntry[t.entryType||'?']||0)+1;
       byStruct[t.structure||'?']   = (byStruct[t.structure||'?']||0)+1;
+      byStrategy[t.strategy||'?']  = (byStrategy[t.strategy||'?']||0)+1;
       byExit[t.exitCategory||'?']  = (byExit[t.exitCategory||'?']||0)+1;
       const tb = timeBucket(t.entryTime);
       byTimeBucket[tb] = (byTimeBucket[tb]||0)+1;
@@ -2142,6 +2143,21 @@
       <div class="stats-section">
         <div class="stats-section-title">Trade by Level</div>
         <div class="chart-box"><canvas id="chartLevel" height="160"></canvas></div>
+      </div>
+
+      <!-- 2b. Strategy -->
+      <div class="stats-section">
+        <div class="stats-section-title">Strategy</div>
+        <div class="chart-box"><canvas id="chartStrategy" height="160"></canvas></div>
+        <div style="margin-top:8px">
+          ${Object.entries(byStrategy).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:10px;color:var(--muted)">${k}</span>
+              <span style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent3)">${v}
+                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">&nbsp;${Math.round(v/total*100)}%</span>
+              </span>
+            </div>`).join('')}
+        </div>
       </div>
 
       <!-- 3. Entry Type -->
@@ -2282,7 +2298,9 @@
       }
     });
 
-    charts.level  = mkBar('chartLevel',  Object.keys(byLevel).map(l=>'Lvl '+l),   Object.values(byLevel),  '#00e5b0');
+    charts.level    = mkBar('chartLevel',    Object.keys(byLevel).map(l=>'Lvl '+l),   Object.values(byLevel),    '#00e5b0');
+    const stratSorted = Object.entries(byStrategy).sort((a,b)=>b[1]-a[1]);
+    charts.strategy = mkBar('chartStrategy', stratSorted.map(([k])=>k), stratSorted.map(([,v])=>v), '#7c5cfc');
     charts.week   = mkBar('chartWeek',   Object.keys(byWeek).map(w=>w.slice(5)),   Object.values(byWeek),   '#7c5cfc');
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const fmtMonthLabel = iso => {
