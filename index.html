@@ -2334,25 +2334,27 @@
     const attData = pastMonths.map(ym => {
       const [yr, mo] = ym.split('-').map(Number);
       const daysInMonth = new Date(yr, mo, 0).getDate();
-      let totalTradingDays = 0, leaveDays = 0;
+      const isCurrentMonth = ym === thisYearM;
+      let totalTradingDays = 0, presentDays = 0, leaveDays = 0;
 
       for (let d = 1; d <= daysInMonth; d++) {
         const dt  = new Date(yr, mo-1, d);
         const iso = localISO(dt);
-        // Only count up to and including today
-        if (dt > todayAtt) continue;
         if (dt.getDay() === 0 || dt.getDay() === 6) continue;  // weekend
-        if (nseHolSet.has(iso)) continue;                       // NSE holiday → not a trading day
-        if (leaveSet2.has(iso)) { leaveDays++; }                // personal leave → trading day but absent
-        totalTradingDays++;                                      // all non-weekend, non-NSE-holiday days
+        if (nseHolSet.has(iso)) continue;                       // NSE holiday
+
+        // Denominator: ALL trading days in month (full month, including future days)
+        totalTradingDays++;
+
+        // Numerator: only count days up to today that weren't leave
+        if (dt > todayAtt) continue;                            // future day — not yet counted
+        if (leaveSet2.has(iso)) { leaveDays++; continue; }      // leave — absent
+        presentDays++;                                           // was present
       }
 
-      // Total trading days = weekdays - NSE holidays (denominator)
-      // Days present       = total trading days - leave days (numerator)
-      const presentDays = totalTradingDays - leaveDays;
-      const pct         = totalTradingDays > 0 ? Math.round(presentDays / totalTradingDays * 100) : 0;
-      const label       = monthNames[mo-1] + ' ' + yr;
-      return { ym, label, totalTradingDays, presentDays, leaveDays, pct };
+      const pct   = totalTradingDays > 0 ? Math.round(presentDays / totalTradingDays * 100) : 0;
+      const label = monthNames[mo-1] + ' ' + yr;
+      return { ym, label, totalTradingDays, presentDays, leaveDays, pct, isCurrentMonth };
     });
 
     // Bar chart — % attendance per month
