@@ -2151,10 +2151,11 @@
         <div class="chart-box"><canvas id="chartStrategy" height="160"></canvas></div>
         <div style="margin-top:8px">
           ${Object.entries(byStrategy).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-              <span style="font-size:10px;color:var(--muted)">${k}</span>
-              <span style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent3)">${v}
-                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">&nbsp;${Math.round(v/total*100)}%</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text);font-weight:600">${k}</span>
+              <span style="display:flex;align-items:baseline;gap:5px">
+                <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent3)">${Math.round(v/total*100)}%</span>
+                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${v})</span>
               </span>
             </div>`).join('')}
         </div>
@@ -2163,44 +2164,45 @@
       <!-- 3. Entry Type -->
       <div class="stats-section">
         <div class="stats-section-title">Entry Type</div>
-        <div class="stat-grid">
-          ${Object.entries(byEntry).map(([k,v])=>`<div class="stat-card">
-            <div class="stat-val" style="font-size:18px">${v}</div>
-            <div class="stat-lbl" style="margin-bottom:3px">${Math.round(v/total*100)}%</div>
-            <div class="stat-lbl">${k}</div>
-            <div class="progress-bar-wrap"><div class="progress-bar" style="width:${Math.round(v/total*100)}%"></div></div>
-          </div>`).join('')}
+        <div style="margin-top:4px">
+          ${Object.entries(byEntry).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text);font-weight:600">${k}</span>
+              <span style="display:flex;align-items:baseline;gap:5px">
+                <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent)">${Math.round(v/total*100)}%</span>
+                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${v})</span>
+              </span>
+            </div>`).join('')}
         </div>
       </div>
 
       <!-- 4. Structure -->
       <div class="stats-section">
         <div class="stats-section-title">Structure</div>
-        <div class="stat-grid">
-          ${Object.entries(byStruct).map(([k,v])=>`<div class="stat-card">
-            <div class="stat-val" style="font-size:18px">${v}</div>
-            <div class="stat-lbl" style="margin-bottom:3px">${Math.round(v/total*100)}%</div>
-            <div class="stat-lbl">${k}</div>
-            <div class="progress-bar-wrap"><div class="progress-bar" style="width:${Math.round(v/total*100)}%;background:var(--accent3)"></div></div>
-          </div>`).join('')}
+        <div style="margin-top:4px">
+          ${Object.entries(byStruct).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text);font-weight:600">${k}</span>
+              <span style="display:flex;align-items:baseline;gap:5px">
+                <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent3)">${Math.round(v/total*100)}%</span>
+                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${v})</span>
+              </span>
+            </div>`).join('')}
         </div>
       </div>
 
       <!-- 5. Exit Type -->
       <div class="stats-section">
         <div class="stats-section-title">Exit Type</div>
-        <div class="stat-grid">
-          ${exitSorted.map(([k,v])=>`<div class="stat-card stat-card-full">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:10px;color:var(--text)">${k}</span>
-              <span style="font-family:var(--font-head);font-size:15px;font-weight:800;color:var(--accent2)">${v}
-                <span style="font-size:10px;color:var(--muted)">${Math.round(v/total*100)}%</span>
+        <div style="margin-top:4px">
+          ${exitSorted.map(([k,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text);font-weight:600">${k}</span>
+              <span style="display:flex;align-items:baseline;gap:5px">
+                <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent2)">${Math.round(v/total*100)}%</span>
+                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${v})</span>
               </span>
-            </div>
-            <div class="progress-bar-wrap" style="margin-top:6px">
-              <div class="progress-bar" style="width:${Math.round(v/total*100)}%;background:var(--accent2)"></div>
-            </div>
-          </div>`).join('')}
+            </div>`).join('')}
         </div>
       </div>
 
@@ -2210,11 +2212,13 @@
         <div class="chart-box"><canvas id="chartTime" height="160"></canvas></div>
         <div style="margin-top:8px">
           ${timeSorted.map(([k,v])=>`
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);font-size:10px">
-              <span style="color:var(--muted)">${k}</span>
-              <span style="color:var(--text);font-weight:700">${v} &nbsp;<span style="color:var(--muted)">${Math.round(v/total*100)}%</span></span>
-            </div>
-          `).join('')}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text);font-weight:600">${k}</span>
+              <span style="display:flex;align-items:baseline;gap:5px">
+                <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--warn)">${Math.round(v/total*100)}%</span>
+                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${v})</span>
+              </span>
+            </div>`).join('')}
         </div>
       </div>
 
@@ -2229,6 +2233,16 @@
       <div class="stats-section">
         <div class="stats-section-title">Trades by Day of Week</div>
         <div class="chart-box"><canvas id="chartDay" height="160"></canvas></div>
+        <div style="margin-top:8px">
+          ${daySorted.map(([d,v])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:11px;color:var(--text);font-weight:600">${d}</span>
+              <span style="display:flex;align-items:baseline;gap:5px">
+                <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:#00d4ff">${Math.round(v/total*100)}%</span>
+                <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${v})</span>
+              </span>
+            </div>`).join('')}
+        </div>
       </div>
 
       <!-- 9. Trades by Week -->
@@ -2273,6 +2287,7 @@
         const ctx = chart.ctx;
         chart.data.datasets.forEach((dataset, i) => {
           const meta = chart.getDatasetMeta(i);
+          const sfx = dataset.suffix || '';
           meta.data.forEach((bar, idx) => {
             const val = dataset.data[idx];
             if (val === undefined || val === null) return;
@@ -2281,25 +2296,25 @@
             ctx.font = 'bold 9px Space Mono, monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'bottom';
-            ctx.fillText(val, bar.x, bar.y - 2);
+            ctx.fillText(val + sfx, bar.x, bar.y - 2);
             ctx.restore();
           });
         });
       }
     };
 
-    const mkBar = (id, labels, data, color) => new Chart(document.getElementById(id), {
+    const mkBar = (id, labels, data, color, suffix='') => new Chart(document.getElementById(id), {
       type:'bar',
       plugins:[datalabelsPlugin],
       data:{
         labels,
-        datasets:[{ data, backgroundColor:color, borderRadius:6 }]
+        datasets:[{ data, backgroundColor:color, borderRadius:6, suffix }]
       },
       options:{
         plugins:{ legend:{display:false} },
         scales:{
           x:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}},
-          y:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'},beginAtZero:true}
+          y:{ticks:{color:'#6b7a99',font:{size:9},callback: v => v+suffix},grid:{color:'#1e2d45'},beginAtZero:true}
         },
         layout:{ padding:{ top:18 } },
         responsive:true
@@ -2308,7 +2323,7 @@
 
     charts.level    = mkBar('chartLevel',    Object.keys(byLevel).map(l=>'Lvl '+l),   Object.values(byLevel),    '#00e5b0');
     const stratSorted = Object.entries(byStrategy).sort((a,b)=>b[1]-a[1]);
-    charts.strategy = mkBar('chartStrategy', stratSorted.map(([k])=>k), stratSorted.map(([,v])=>v), '#7c5cfc');
+    charts.strategy = mkBar('chartStrategy', stratSorted.map(([k])=>k), stratSorted.map(([,v])=>Math.round(v/total*100)), '#7c5cfc', '%');
     charts.week   = mkBar('chartWeek',   Object.keys(byWeek).map(w=>w.slice(5)),   Object.values(byWeek),   '#7c5cfc');
     const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     const fmtMonthLabel = iso => {
@@ -2316,8 +2331,8 @@
       return monthNames[parseInt(m,10)-1] + ' ' + y;
     };
     charts.month  = mkBar('chartMonth',  Object.keys(byMonth).map(fmtMonthLabel),  Object.values(byMonth),  '#ff6b35');
-    charts.day    = mkBar('chartDay',    daySorted.map(([d])=>d.slice(0,3)),        daySorted.map(([,v])=>v),'#00d4ff');
-    charts.time   = mkBar('chartTime',   timeSorted.map(([k])=>k),                  timeSorted.map(([,v])=>v),'#fbbf24');
+    charts.day    = mkBar('chartDay',    daySorted.map(([d])=>d.slice(0,3)),        daySorted.map(([,v])=>Math.round(v/total*100)),'#00d4ff', '%');
+    charts.time   = mkBar('chartTime',   timeSorted.map(([k])=>k),                  timeSorted.map(([,v])=>Math.round(v/total*100)),'#fbbf24', '%');
     // ── Trading Attendance per month ──────────────────────────────────
     // Only include months up to current month (past + current, not future)
     const todayAtt  = new Date();
@@ -2428,18 +2443,19 @@
       charts.wait = mkBar(
         'chartWait',
         gapSorted.map(g => g.gap + (g.gap===1?' day':' days')),
-        gapSorted.map(g => g.cnt),
-        '#00e5b0'
+        gapSorted.map(g => Math.round(g.cnt/gapTotal*100)),
+        '#00e5b0', '%'
       );
 
       // Breakdown list
       const bdEl = document.getElementById('waitBreakdown');
       if (bdEl) {
         bdEl.innerHTML = gapSorted.map(({gap, cnt}) => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:10px;color:var(--muted)">${gap} ${gap===1?'day':'days'} gap</span>
-            <span style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent)">
-              ${cnt} <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">&nbsp;${Math.round(cnt/gapTotal*100)}%</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:11px;color:var(--text);font-weight:600">${gap} ${gap===1?'day':'days'} gap</span>
+            <span style="display:flex;align-items:baseline;gap:5px">
+              <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent)">${Math.round(cnt/gapTotal*100)}%</span>
+              <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${cnt})</span>
             </span>
           </div>`).join('');
       }
