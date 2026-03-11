@@ -2439,39 +2439,105 @@
     };
     const seqEl = document.getElementById('exitSequenceTable');
     if (seqEl && sorted.length) {
-      // Legend
-      const legendHtml = Object.entries(EXIT_COLORS).map(([k, col]) => `
-        <div style="display:flex;align-items:center;gap:5px">
-          <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
-          <span style="font-size:9px;color:var(--muted)">${EXIT_SHORT[k]||k}</span>
-        </div>`).join('');
+      const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const fmtD = iso => {
+        if (!iso) return '';
+        const d = new Date(iso + 'T00:00:00');
+        return d.getDate().toString().padStart(2,'0') + ' ' + MN[d.getMonth()];
+      };
 
-      // Horizontal dot timeline
-      const dotsHtml = sorted.map((t, idx) => {
-        const exit  = t.exitCategory || '?';
-        const col   = EXIT_COLORS[exit] || '#6b7a99';
-        const lbl   = EXIT_SHORT[exit]  || exit;
-        const isFirst = idx === 0;
-        const isLast  = idx === sorted.length - 1;
-        // Format date as "06 Jan"
-        const dateObj = t.date ? new Date(t.date + 'T00:00:00') : null;
-        const dateStr = dateObj ? dateObj.getDate().toString().padStart(2,'0') + ' ' +
-          ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dateObj.getMonth()] : '';
-        return `
-          <div style="display:flex;flex-direction:column;align-items:center;width:64px;flex-shrink:0">
-            <!-- trade num + date above dot -->
-            <div style="font-family:var(--font-mono);font-size:8px;color:var(--muted);text-align:center;line-height:1.4;margin-bottom:4px">
-              Trade ${idx+1}<br>${dateStr}
-            </div>
-            <!-- dot + horizontal lines -->
-            <div style="display:flex;flex-direction:row;align-items:center;width:100%">
-              <div style="flex:1;height:2px;background:${isFirst ? 'transparent' : 'var(--border)'}"></div>
-              <div style="width:34px;height:34px;border-radius:50%;background:${col}22;border:2px solid ${col};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:9px;font-weight:700;color:${col}">${idx+1}</div>
-              <div style="flex:1;height:2px;background:${isLast ? 'transparent' : 'var(--border)'}"></div>
-            </div>
-            <!-- exit label below dot -->
-            <div style="font-size:9px;font-weight:700;color:${col};text-align:center;margin-top:6px;line-height:1.3;max-width:60px">${lbl}</div>
-          </div>`;
+      // Build sets for quick lookup
+      const seqNseSet   = new Set(NSE_HOLIDAYS_2026.map(h => h.date));
+      const seqLeaveSet = new Set((Array.isArray(leaves) ? leaves : []).map(l => String(l.date).trim()));
+
+      // Helper: collect all H and L days between two trade dates (exclusive)
+      function gapMarkers(dateA, dateB) {
+        const markers = [];
+        if (!dateA || !dateB) return markers;
+        let cur = new Date(dateA + 'T00:00:00');
+        const end = new Date(dateB + 'T00:00:00');
+        cur.setDate(cur.getDate() + 1);
+        while (cur < end) {
+          const iso = localISO(cur);
+          const dow = cur.getDay();
+          if (dow !== 0 && dow !== 6) { // weekday only
+            if (seqNseSet.has(iso))   markers.push({ type:'H', date: iso });
+            else if (seqLeaveSet.has(iso)) markers.push({ type:'L', date: iso });
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+        return markers;
+      }
+
+      // Legend
+      const legendHtml = `
+        ${Object.entries(EXIT_COLORS).map(([k, col]) => `
+          <div style="display:flex;align-items:center;gap:5px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
+            <span style="font-size:9px;color:var(--muted)">${EXIT_SHORT[k]||k}</span>
+          </div>`).join('')}
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:10px;height:10px;border-radius:50%;background:#7c5cfc33;border:1.5px solid #7c5cfc;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#7c5cfc">H</div>
+          <span style="font-size:9px;color:var(--muted)">NSE Holiday</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <div style="width:10px;height:10px;border-radius:50%;background:#fbbf2433;border:1.5px solid #fbbf24;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#fbbf24">L</div>
+          <span style="font-size:9px;color:var(--muted)">Leave / Event</span>
+        </div>`;
+
+      // Build items array: trade dots + H/L markers in between
+      const items = [];
+      sorted.forEach((t, idx) => {
+        // Insert H/L markers between previous trade and this trade
+        if (idx > 0) {
+          const markers = gapMarkers(sorted[idx-1].date, t.date);
+          markers.forEach(m => items.push({ kind: m.type, date: m.date }));
+        }
+        items.push({ kind: 'trade', trade: t, tradeIdx: idx });
+      });
+
+      // Render items
+      const dotsHtml = items.map((item, i) => {
+        const isFirst = i === 0;
+        const isLast  = i === items.length - 1;
+        const lineL   = isFirst ? 'transparent' : 'var(--border)';
+        const lineR   = isLast  ? 'transparent' : 'var(--border)';
+
+        if (item.kind === 'trade') {
+          const t   = item.trade;
+          const idx = item.tradeIdx;
+          const exit = t.exitCategory || '?';
+          const col  = EXIT_COLORS[exit] || '#6b7a99';
+          const lbl  = EXIT_SHORT[exit]  || exit;
+          return `
+            <div style="display:flex;flex-direction:column;align-items:center;width:64px;flex-shrink:0">
+              <div style="font-family:var(--font-mono);font-size:8px;color:var(--muted);text-align:center;line-height:1.4;margin-bottom:4px">
+                Trade ${idx+1}<br>${fmtD(t.date)}
+              </div>
+              <div style="display:flex;flex-direction:row;align-items:center;width:100%">
+                <div style="flex:1;height:2px;background:${lineL}"></div>
+                <div style="width:34px;height:34px;border-radius:50%;background:${col}22;border:2px solid ${col};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:9px;font-weight:700;color:${col}">${idx+1}</div>
+                <div style="flex:1;height:2px;background:${lineR}"></div>
+              </div>
+              <div style="font-size:9px;font-weight:700;color:${col};text-align:center;margin-top:6px;line-height:1.3;max-width:60px">${lbl}</div>
+            </div>`;
+        } else {
+          // H or L marker
+          const col  = item.kind === 'H' ? '#7c5cfc' : '#fbbf24';
+          const lbl  = item.kind === 'H' ? 'Holiday'  : 'Leave';
+          return `
+            <div style="display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0">
+              <div style="font-family:var(--font-mono);font-size:8px;color:var(--muted);text-align:center;line-height:1.4;margin-bottom:4px">
+                &nbsp;<br>${fmtD(item.date)}
+              </div>
+              <div style="display:flex;flex-direction:row;align-items:center;width:100%">
+                <div style="flex:1;height:2px;background:${lineL}"></div>
+                <div style="width:26px;height:26px;border-radius:50%;background:${col}22;border:1.5px dashed ${col};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:9px;font-weight:700;color:${col}">${item.kind}</div>
+                <div style="flex:1;height:2px;background:${lineR}"></div>
+              </div>
+              <div style="font-size:8px;color:${col};text-align:center;margin-top:6px;line-height:1.3">${lbl}</div>
+            </div>`;
+        }
       }).join('');
 
       seqEl.innerHTML = `
