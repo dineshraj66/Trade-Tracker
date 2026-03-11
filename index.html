@@ -2493,13 +2493,28 @@
       // Build items array: trade dots + H/L markers in between
       const items = [];
       sorted.forEach((t, idx) => {
-        // Insert H/L markers between previous trade and this trade
+        // Insert H/L/NOP markers between previous trade and this trade
         if (idx > 0) {
           const markers = gapMarkers(sorted[idx-1].date, t.date);
           markers.forEach(m => items.push({ kind: m.type, date: m.date }));
         }
         items.push({ kind: 'trade', trade: t, tradeIdx: idx });
       });
+
+      // Also append H/L/NOP markers from last trade date up to today
+      const lastTradeDate = sorted[sorted.length-1].date;
+      const todayIso = localISO(new Date());
+      if (lastTradeDate && lastTradeDate < todayIso) {
+        const trailingMarkers = gapMarkers(lastTradeDate, todayIso);
+        // Also include today itself
+        const todayDow = new Date(todayIso + 'T00:00:00').getDay();
+        if (todayDow !== 0 && todayDow !== 6) {
+          if (seqNseSet.has(todayIso))        trailingMarkers.push({ type:'H',   date: todayIso });
+          else if (seqLeaveSet.has(todayIso)) trailingMarkers.push({ type:'L',   date: todayIso });
+          else                                trailingMarkers.push({ type:'NOP', date: todayIso });
+        }
+        trailingMarkers.forEach(m => items.push({ kind: m.type, date: m.date }));
+      }
 
       // Render items
       const dotsHtml = items.map((item, i) => {
