@@ -973,6 +973,57 @@
       margin-bottom: 18px;
       line-height: 1.6;
     }
+
+  /* ── Emotion tab styles ─────────────────────────── */
+  .phase-btn {
+    flex: 1;
+    padding: 7px 4px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .phase-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0a1628;
+    font-weight: 700;
+  }
+  .emotion-chip {
+    padding: 6px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .emotion-chip.active {
+    background: var(--accent3);
+    border-color: var(--accent3);
+    color: #fff;
+    font-weight: 700;
+  }
+  .emotion-entry {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .emotion-entry:last-child { border-bottom: none; }
+  .emotion-phase-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    margin-bottom: 4px;
+  }
   </style>
 </head>
 <body>
@@ -991,6 +1042,7 @@
   <button class="tab-btn" onclick="switchTab('home')"   id="tab-home"  >🏠 Home</button>
   <button class="tab-btn" onclick="switchTab('stats')"  id="tab-stats" >📊 Stats</button>
   <button class="tab-btn" onclick="switchTab('trades')" id="tab-trades">📋 Trades</button>
+  <button class="tab-btn" onclick="switchTab('emotions')" id="tab-emotions">🧠 Mind</button>
 </nav>
 
 <!-- ─── Home Page ────────────────────────────────── -->
@@ -1076,6 +1128,53 @@
 <div class="page" id="page-trades">
   <div id="tradesList">
     <div class="loading"><div class="spinner"></div>Loading trades…</div>
+  </div>
+</div>
+
+<!-- ─── Emotions Page ───────────────────────────────── -->
+<div class="page" id="page-emotions">
+  <div style="padding:16px">
+
+    <!-- Log Emotions Card -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:12px">🧠 Post Session Emotions</div>
+
+      <!-- Date -->
+      <label class="form-label">Date</label>
+      <input class="form-control" type="date" id="eDate" style="margin-bottom:10px">
+
+
+
+      <!-- Emotion chips -->
+      <label class="form-label">Emotion</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionChips">
+        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Calm / Focused">😌 Calm</button>
+        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Anxious / Nervous">😰 Anxious</button>
+        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Excited / Overconfident">🤩 Excited</button>
+        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Frustrated / Angry">😤 Frustrated</button>
+        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="FOMO">😬 FOMO</button>
+        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="__custom__">✏️ Custom</button>
+      </div>
+      <input class="form-control" type="text" id="eCustom" placeholder="Describe your emotion…" style="display:none;margin-bottom:12px">
+
+      <!-- Notes -->
+      <label class="form-label">Notes / Journal</label>
+      <textarea class="form-control" id="eNotes" rows="3" placeholder="What were you feeling and why?…" style="margin-bottom:14px;resize:vertical"></textarea>
+
+      <button class="btn btn-primary" onclick="saveEmotion()" style="width:100%">Save Emotion</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title" style="margin-bottom:12px">📊 Emotion Stats</div>
+      <div id="emotionStats"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- History -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">📅 History</div>
+      <div id="emotionHistory"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
   </div>
 </div>
 
@@ -1544,7 +1643,8 @@
     document.getElementById('tab-'+tab).classList.add('active');
     const fab = document.getElementById('fabBtn');
     tab==='trades' ? fab.classList.remove('fab-hidden') : fab.classList.add('fab-hidden');
-    if (tab==='home') renderHome();
+    if (tab==='home')     renderHome();
+    if (tab==='emotions') renderEmotions();
   };
 
   /* ── filterByPeriod (used internally) ─────────── */
@@ -2610,13 +2710,190 @@
     }
   };
 
+  /* ── Emotions ────────────────────────────────── */
+  let emotions = [];
+  let selectedPhase   = 'post';
+  let selectedEmotion = null;
+
+  const PHASE_LABELS = { pre:'Pre Session', ongoing:'Ongoing', post:'Post Trade' };
+  const PHASE_COLORS = { pre:'#00e5b0', ongoing:'#00d4ff', post:'#7c5cfc' };
+  const EMOTION_ICONS = {
+    'Calm / Focused':'😌','Anxious / Nervous':'😰',
+    'Excited / Overconfident':'🤩','Frustrated / Angry':'😤','FOMO':'😬'
+  };
+
+  // Set today's date default
+  const eDateEl = document.getElementById('eDate');
+  if (eDateEl) eDateEl.value = localISO(new Date());
+
+  window.selectEmotion = function(el) {
+    document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    selectedEmotion = el.dataset.val;
+    const customEl = document.getElementById('eCustom');
+    if (customEl) {
+      customEl.style.display = selectedEmotion === '__custom__' ? 'block' : 'none';
+      if (selectedEmotion !== '__custom__') customEl.value = '';
+    }
+  };
+
+  window.saveEmotion = async function() {
+    const date      = document.getElementById('eDate').value;
+    const notes     = document.getElementById('eNotes').value.trim();
+    const customVal = document.getElementById('eCustom').value.trim();
+    const emotion   = selectedEmotion === '__custom__' ? (customVal||null) : selectedEmotion;
+
+    if (!date)    { showToast('Please select a date'); return; }
+    if (!emotion) { showToast('Please select an emotion'); return; }
+
+    const entry = { date, phase: selectedPhase, emotion, notes, ts: Date.now() };
+
+    try {
+      if (db) {
+        await addDoc(collection(db, 'emotions'), entry);
+      } else {
+        const stored = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
+        stored.push({ ...entry, id:'local_'+Date.now() });
+        localStorage.setItem('tt_emotions', JSON.stringify(stored));
+        emotions = stored;
+        renderEmotions();
+      }
+      // Reset
+      document.getElementById('eNotes').value = '';
+      document.getElementById('eCustom').value = '';
+      document.getElementById('eCustom').style.display = 'none';
+      document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
+      selectedEmotion = null;
+      showToast('Emotion saved ✓');
+    } catch(e) { console.error('saveEmotion',e); showToast('Save failed'); }
+  };
+
+  function loadEmotions() {
+    if (!db) {
+      emotions = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
+      renderEmotions();
+      return;
+    }
+    try {
+      onSnapshot(collection(db, 'emotions'), snap => {
+        emotions = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+        emotions.sort((a,b) => (b.ts||0)-(a.ts||0));
+        renderEmotions();
+      });
+    } catch(e) { console.warn('loadEmotions',e); }
+  }
+
+  function renderEmotions() {
+    renderEmotionStats();
+    renderEmotionHistory();
+  }
+
+  function renderEmotionStats() {
+    const el = document.getElementById('emotionStats');
+    if (!el) return;
+    if (!emotions.length) {
+      el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No emotions logged yet</div>';
+      return;
+    }
+    const byEmo = {}, byPhase = { pre:{}, ongoing:{}, post:{} };
+    emotions.forEach(e => {
+      byEmo[e.emotion] = (byEmo[e.emotion]||0)+1;
+      if (byPhase[e.phase]) byPhase[e.phase][e.emotion] = (byPhase[e.phase][e.emotion]||0)+1;
+    });
+    const total = emotions.length;
+    const emoSorted = Object.entries(byEmo).sort((a,b)=>b[1]-a[1]);
+    const canvasId = 'chartEmotions';
+
+    el.innerHTML = `
+      <div class="chart-box" style="margin-bottom:12px"><canvas id="${canvasId}" height="160"></canvas></div>
+      <div style="margin-bottom:16px">
+        ${emoSorted.map(([emo,cnt])=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:11px;color:var(--text);font-weight:600">${EMOTION_ICONS[emo]||'💭'} ${emo}</span>
+            <span style="display:flex;align-items:baseline;gap:5px">
+              <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent3)">${Math.round(cnt/total*100)}%</span>
+              <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${cnt})</span>
+            </span>
+          </div>`).join('')}
+      </div>
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">By Phase</div>
+      ${['pre','ongoing','post'].map(ph=>{
+        const phData  = byPhase[ph];
+        const phTotal = Object.values(phData).reduce((a,b)=>a+b,0);
+        if (!phTotal) return '';
+        const col = PHASE_COLORS[ph];
+        return `
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;font-weight:700;color:${col};margin-bottom:6px">${PHASE_LABELS[ph]}</div>
+            ${Object.entries(phData).sort((a,b)=>b[1]-a[1]).map(([emo,cnt])=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:10px;color:var(--muted)">${EMOTION_ICONS[emo]||'💭'} ${emo}</span>
+                <span style="font-size:13px;font-weight:800;color:${col};font-family:var(--font-head)">${Math.round(cnt/phTotal*100)}% <span style="font-size:9px;color:var(--muted)">(${cnt})</span></span>
+              </div>`).join('')}
+          </div>`;
+      }).join('')}`;
+
+    const existing = Chart.getChart(canvasId);
+    if (existing) existing.destroy();
+    new Chart(document.getElementById(canvasId), {
+      type:'bar',
+      data:{
+        labels: emoSorted.map(([e])=>(EMOTION_ICONS[e]||'💭')+' '+e.split('/')[0].trim()),
+        datasets:[{ data:emoSorted.map(([,v])=>Math.round(v/total*100)),
+          backgroundColor:['#00e5b0','#ef4444','#7c5cfc','#fbbf24','#00d4ff','#ff6b35'],
+          borderRadius:6 }]
+      },
+      options:{
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:'#6b7a99', font:{size:8} }, grid:{ color:'#1e2d45' } },
+          y:{ ticks:{ color:'#6b7a99', font:{size:9}, callback:v=>v+'%' }, grid:{ color:'#1e2d45' }, beginAtZero:true, max:100 }
+        },
+        responsive:true
+      }
+    });
+  }
+
+  function renderEmotionHistory() {
+    const el = document.getElementById('emotionHistory');
+    if (!el) return;
+    if (!emotions.length) {
+      el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No entries yet</div>';
+      return;
+    }
+    const byDate = {};
+    emotions.forEach(e => { if(!byDate[e.date]) byDate[e.date]=[]; byDate[e.date].push(e); });
+    const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    el.innerHTML = dates.map(date => {
+      const entries = byDate[date].sort((a,b)=>({pre:0,ongoing:1,post:2}[a.phase]||0)-({pre:0,ongoing:1,post:2}[b.phase]||0));
+      const d = new Date(date+'T00:00:00');
+      const dateStr = d.getDate().toString().padStart(2,'0')+' '+MN[d.getMonth()]+' '+d.getFullYear();
+      return `
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${dateStr}</div>
+          ${entries.map(e=>{
+            const col = PHASE_COLORS[e.phase]||'#6b7a99';
+            return `
+              <div class="emotion-entry">
+                <span class="emotion-phase-badge" style="background:${col}22;color:${col}">${PHASE_LABELS[e.phase]||e.phase}</span>
+                <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">${EMOTION_ICONS[e.emotion]||'💭'} ${e.emotion}</div>
+                ${e.notes?`<div style="font-size:10px;color:var(--muted);line-height:1.5">${e.notes}</div>`:''}
+              </div>`;
+          }).join('')}
+        </div>`;
+    }).join('');
+  }
+
   /* ── Init ────────────────────────────────────── */
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
   switchTab('home');
   loadTrades();
   loadLeaves();
-  syncTargetFromFirestore(); // pull target from Firestore once
+  loadEmotions();
+  syncTargetFromFirestore();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
