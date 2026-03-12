@@ -1,5 +1,5 @@
-/* Trade Tracker – Service Worker v3 */
-const CACHE = 'trade-tracker-v3';
+/* Trade Tracker – Service Worker v4 */
+const CACHE = 'trade-tracker-v4';
 
 const PRECACHE = [
   './index.html',

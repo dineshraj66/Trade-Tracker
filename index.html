@@ -1135,35 +1135,6 @@
 <div class="page" id="page-emotions">
   <div style="padding:16px">
 
-    <!-- Log Emotions Card -->
-    <div class="card" style="margin-bottom:16px">
-      <div class="card-title" style="margin-bottom:12px">🧠 Post Session Emotions</div>
-
-      <!-- Date -->
-      <label class="form-label">Date</label>
-      <input class="form-control" type="date" id="eDate" style="margin-bottom:10px">
-
-
-
-      <!-- Emotion chips -->
-      <label class="form-label">Emotion</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionChips">
-        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Calm / Focused">😌 Calm</button>
-        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Anxious / Nervous">😰 Anxious</button>
-        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Excited / Overconfident">🤩 Excited</button>
-        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Frustrated / Angry">😤 Frustrated</button>
-        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="FOMO">😬 FOMO</button>
-        <button class="emotion-chip" onclick="selectEmotion(this)" data-val="__custom__">✏️ Custom</button>
-      </div>
-      <input class="form-control" type="text" id="eCustom" placeholder="Describe your emotion…" style="display:none;margin-bottom:12px">
-
-      <!-- Notes -->
-      <label class="form-label">Notes / Journal</label>
-      <textarea class="form-control" id="eNotes" rows="3" placeholder="What were you feeling and why?…" style="margin-bottom:14px;resize:vertical"></textarea>
-
-      <button class="btn btn-primary" onclick="saveEmotion()" style="width:100%">Save Emotion</button>
-    </div>
-
     <!-- Stats -->
     <div class="card" style="margin-bottom:16px">
       <div class="card-title" style="margin-bottom:12px">📊 Emotion Stats</div>
@@ -1171,15 +1142,44 @@
     </div>
 
     <!-- History -->
-    <div class="card">
+    <div class="card" style="margin-bottom:80px">
       <div class="card-title" style="margin-bottom:12px">📅 History</div>
       <div id="emotionHistory"><div class="loading"><div class="spinner"></div></div></div>
     </div>
+
+  </div>
+</div>
+
+<!-- ─── Emotion Entry Modal ───────────────────────── -->
+<div class="leave-modal-overlay" id="emotionModalOverlay" onclick="closeEmotionModal()" style="display:none">
+  <div class="leave-modal" onclick="event.stopPropagation()">
+    <div class="leave-modal-title">🧠 Post Session Emotions</div>
+
+    <label class="form-label">Date</label>
+    <input class="form-control" type="date" id="eDate" style="margin-bottom:12px">
+
+    <label class="form-label">Emotion</label>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Calm / Focused">😌 Calm</button>
+      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Anxious / Nervous">😰 Anxious</button>
+      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Excited / Overconfident">🤩 Excited</button>
+      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Frustrated / Angry">😤 Frustrated</button>
+      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="FOMO">😬 FOMO</button>
+      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="__custom__">✏️ Custom</button>
+    </div>
+    <input class="form-control" type="text" id="eCustom" placeholder="Describe your emotion…" style="display:none;margin-bottom:12px">
+
+    <label class="form-label">Notes / Journal</label>
+    <textarea class="form-control" id="eNotes" rows="3" placeholder="What were you feeling and why?…" style="margin-bottom:14px;resize:vertical"></textarea>
+
+    <button class="btn btn-primary" onclick="saveEmotion()" style="width:100%;margin-bottom:8px">Save</button>
+    <button class="btn" onclick="closeEmotionModal()" style="width:100%;background:var(--bg3);color:var(--muted)">Cancel</button>
   </div>
 </div>
 
 <!-- ─── FAB (absolute, stays inside body max-width) ─ -->
 <button class="fab fab-hidden" id="fabBtn" onclick="openModal()" title="Add Trade">+</button>
+<button class="fab fab-hidden" id="fabEmotionBtn" title="Add Emotion" style="background:var(--accent3);box-shadow:0 4px 22px rgba(124,92,252,0.45)">+</button>
 
 <!-- ─── Leave Modal ──────────────────────────────── -->
 <div class="leave-modal-overlay" id="leaveModalOverlay">
@@ -1585,7 +1585,7 @@
   /* ── Modal open/close ────────────────────────── */
   window.openModal = function(id) {
     editingId = id || null;
-    document.getElementById('modalTitle').textContent = id ? 'Edit Trade' : 'New Trade';
+    document.getElementById('modalTitle').textContent = id ? 'Add Trade' : 'New Trade';
     document.getElementById('deleteBtn').style.display = id ? 'block' : 'none';
 
     if (id) {
@@ -1643,6 +1643,8 @@
     document.getElementById('tab-'+tab).classList.add('active');
     const fab = document.getElementById('fabBtn');
     tab==='trades' ? fab.classList.remove('fab-hidden') : fab.classList.add('fab-hidden');
+    const fabEmo = document.getElementById('fabEmotionBtn');
+    if (fabEmo) tab==='emotions' ? fabEmo.classList.remove('fab-hidden') : fabEmo.classList.add('fab-hidden');
     if (tab==='home')     renderHome();
     if (tab==='emotions') renderEmotions();
   };
@@ -2710,21 +2712,110 @@
     }
   };
 
+  window.scrollToEmotionForm = function() {
+    const overlay = document.getElementById('emotionModalOverlay');
+    if (overlay) overlay.style.display = 'flex';
+    const eDateEl = document.getElementById('eDate');
+    if (eDateEl) eDateEl.value = localISO(new Date());
+    renderEmotionChips();
+  };
+
+  document.getElementById('fabEmotionBtn').addEventListener('click', function() {
+    window.scrollToEmotionForm();
+  });
+
   /* ── Emotions ────────────────────────────────── */
   let emotions = [];
   let selectedPhase   = 'post';
   let selectedEmotion = null;
 
   const PHASE_LABELS = { pre:'Pre Session', ongoing:'Ongoing', post:'Post Trade' };
+  const DEFAULT_EMOTIONS = [
+    { val:'Calm / Focused',         label:'😌 Calm' },
+    { val:'Anxious / Nervous',      label:'😰 Anxious' },
+    { val:'Excited / Overconfident',label:'🤩 Excited' },
+    { val:'Frustrated / Angry',     label:'😤 Frustrated' },
+    { val:'FOMO',                   label:'😬 FOMO' },
+  ];
+
+  // Custom emotions — synced via Firestore, localStorage as fallback
+  let customEmotions = JSON.parse(localStorage.getItem('tt_custom_emotions') || '[]');
+
+  function getSavedEmotions() { return customEmotions; }
+
+  async function saveCustomEmotion(val) {
+    if (customEmotions.includes(val)) return;
+    customEmotions.push(val);
+    localStorage.setItem('tt_custom_emotions', JSON.stringify(customEmotions));
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'customEmotions'), { list: customEmotions });
+      } catch(e) { console.warn('saveCustomEmotion Firestore', e); }
+    }
+  }
+
+  async function loadCustomEmotions() {
+    if (!db) { renderEmotionChips(); return; }
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'customEmotions'));
+      if (snap.exists()) {
+        customEmotions = snap.data().list || [];
+        localStorage.setItem('tt_custom_emotions', JSON.stringify(customEmotions));
+      }
+    } catch(e) { console.warn('loadCustomEmotions', e); }
+    renderEmotionChips();
+  }
+
+  function renderEmotionChips() {
+    const container = document.getElementById('emotionChips');
+    if (!container) return;
+    const saved = getSavedEmotions();
+    const allChips = [
+      ...DEFAULT_EMOTIONS,
+      ...saved.map(v => ({ val: v, label: '💭 ' + v, custom: true })),
+      { val: '__custom__', label: '✏️ Custom' }
+    ];
+    container.innerHTML = allChips.map(e => `
+      <button class="emotion-chip${e.custom ? ' custom-saved' : ''}"
+        onclick="selectEmotion(this)" data-val="${e.val}"
+        style="position:relative">
+        ${e.label}
+        ${e.custom ? `<span onclick="event.stopPropagation();removeCustomEmotion('${e.val}',this.parentElement)"
+          style="margin-left:4px;color:#ef4444;font-size:10px;line-height:1">×</span>` : ''}
+      </button>`).join('');
+  }
+
+  window.removeCustomEmotion = async function(val, btn) {
+    customEmotions = customEmotions.filter(v => v !== val);
+    localStorage.setItem('tt_custom_emotions', JSON.stringify(customEmotions));
+    if (db) {
+      try {
+        await setDoc(doc(db, 'settings', 'customEmotions'), { list: customEmotions });
+      } catch(e) { console.warn('removeCustomEmotion Firestore', e); }
+    }
+    renderEmotionChips();
+    if (selectedEmotion === val) selectedEmotion = null;
+  };
   const PHASE_COLORS = { pre:'#00e5b0', ongoing:'#00d4ff', post:'#7c5cfc' };
   const EMOTION_ICONS = {
     'Calm / Focused':'😌','Anxious / Nervous':'😰',
     'Excited / Overconfident':'🤩','Frustrated / Angry':'😤','FOMO':'😬'
   };
 
-  // Set today's date default
+  // Set today's date default for emotion form
   const eDateEl = document.getElementById('eDate');
   if (eDateEl) eDateEl.value = localISO(new Date());
+
+  window.closeEmotionModal = function() {
+    const overlay = document.getElementById('emotionModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+    // Reset form
+    document.getElementById('eNotes').value = '';
+    document.getElementById('eCustom').value = '';
+    document.getElementById('eCustom').style.display = 'none';
+    document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
+    selectedEmotion = null;
+  };
 
   window.selectEmotion = function(el) {
     document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
@@ -2748,6 +2839,13 @@
 
     const entry = { date, phase: selectedPhase, emotion, notes, ts: Date.now() };
 
+    // Persist custom emotion for future use
+    const knownEmos = DEFAULT_EMOTIONS.map(e=>e.val);
+    if (!knownEmos.includes(emotion)) {
+      await saveCustomEmotion(emotion);
+      renderEmotionChips();
+    }
+
     try {
       if (db) {
         await addDoc(collection(db, 'emotions'), entry);
@@ -2764,11 +2862,13 @@
       document.getElementById('eCustom').style.display = 'none';
       document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
       selectedEmotion = null;
+      closeEmotionModal();
       showToast('Emotion saved ✓');
     } catch(e) { console.error('saveEmotion',e); showToast('Save failed'); }
   };
 
   function loadEmotions() {
+    loadCustomEmotions();
     if (!db) {
       emotions = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
       renderEmotions();
@@ -2816,22 +2916,7 @@
             </span>
           </div>`).join('')}
       </div>
-      <div style="font-family:var(--font-mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">By Phase</div>
-      ${['pre','ongoing','post'].map(ph=>{
-        const phData  = byPhase[ph];
-        const phTotal = Object.values(phData).reduce((a,b)=>a+b,0);
-        if (!phTotal) return '';
-        const col = PHASE_COLORS[ph];
-        return `
-          <div style="margin-bottom:10px">
-            <div style="font-size:10px;font-weight:700;color:${col};margin-bottom:6px">${PHASE_LABELS[ph]}</div>
-            ${Object.entries(phData).sort((a,b)=>b[1]-a[1]).map(([emo,cnt])=>`
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border)">
-                <span style="font-size:10px;color:var(--muted)">${EMOTION_ICONS[emo]||'💭'} ${emo}</span>
-                <span style="font-size:13px;font-weight:800;color:${col};font-family:var(--font-head)">${Math.round(cnt/phTotal*100)}% <span style="font-size:9px;color:var(--muted)">(${cnt})</span></span>
-              </div>`).join('')}
-          </div>`;
-      }).join('')}`;
+`;
 
     const existing = Chart.getChart(canvasId);
     if (existing) existing.destroy();
@@ -2869,7 +2954,8 @@
     el.innerHTML = dates.map(date => {
       const entries = byDate[date].sort((a,b)=>({pre:0,ongoing:1,post:2}[a.phase]||0)-({pre:0,ongoing:1,post:2}[b.phase]||0));
       const d = new Date(date+'T00:00:00');
-      const dateStr = d.getDate().toString().padStart(2,'0')+' '+MN[d.getMonth()]+' '+d.getFullYear();
+      const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const dateStr = DAYS[d.getDay()]+', '+d.getDate().toString().padStart(2,'0')+' '+MN[d.getMonth()]+' '+d.getFullYear();
       return `
         <div style="margin-bottom:14px">
           <div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">${dateStr}</div>
@@ -2877,14 +2963,111 @@
             const col = PHASE_COLORS[e.phase]||'#6b7a99';
             return `
               <div class="emotion-entry">
-                <span class="emotion-phase-badge" style="background:${col}22;color:${col}">${PHASE_LABELS[e.phase]||e.phase}</span>
-                <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">${EMOTION_ICONS[e.emotion]||'💭'} ${e.emotion}</div>
-                ${e.notes?`<div style="font-size:10px;color:var(--muted);line-height:1.5">${e.notes}</div>`:''}
+                <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                  <div>
+                    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">${EMOTION_ICONS[e.emotion]||'💭'} ${e.emotion}</div>
+                    ${e.notes?`<div style="font-size:10px;color:var(--muted);line-height:1.5">${e.notes}</div>`:''}
+                  </div>
+                  <button onclick="openEmotionEdit('${e.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer;flex-shrink:0;margin-left:8px">✏️ Edit</button>
+                </div>
               </div>`;
           }).join('')}
         </div>`;
     }).join('');
   }
+
+  /* ── Emotion Edit / Delete ──────────────────────── */
+  let editingEmotionId   = null;
+  let editingEmotionVal  = null;
+
+  window.openEmotionEdit = function(id) {
+    const entry = emotions.find(e => e.id === id);
+    if (!entry) return;
+    editingEmotionId  = id;
+    editingEmotionVal = entry.emotion;
+
+    document.getElementById('eEditDate').value  = entry.date || '';
+    document.getElementById('eEditNotes').value = entry.notes || '';
+
+    // Set chips
+    const KNOWN = ['Calm / Focused','Anxious / Nervous','Excited / Overconfident','Frustrated / Angry','FOMO'];
+    document.querySelectorAll('#emotionEditChips .emotion-chip').forEach(b => {
+      b.classList.remove('active');
+      if (b.dataset.val === entry.emotion) b.classList.add('active');
+    });
+    const isCustom = !KNOWN.includes(entry.emotion);
+    const customChip = document.querySelector('#emotionEditChips [data-val="__custom__"]');
+    const customInput = document.getElementById('eEditCustom');
+    if (isCustom) {
+      if (customChip) customChip.classList.add('active');
+      customInput.style.display = 'block';
+      customInput.value = entry.emotion;
+    } else {
+      customInput.style.display = 'none';
+      customInput.value = '';
+    }
+
+    const modal = document.getElementById('emotionEditModal');
+    modal.style.display = 'flex';
+  };
+
+  window.selectEditEmotion = function(el) {
+    document.querySelectorAll('#emotionEditChips .emotion-chip').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    editingEmotionVal = el.dataset.val;
+    const customInput = document.getElementById('eEditCustom');
+    customInput.style.display = editingEmotionVal === '__custom__' ? 'block' : 'none';
+    if (editingEmotionVal !== '__custom__') customInput.value = '';
+  };
+
+  window.closeEmotionEdit = function() {
+    document.getElementById('emotionEditModal').style.display = 'none';
+    editingEmotionId  = null;
+    editingEmotionVal = null;
+  };
+
+  window.saveEmotionEdit = async function() {
+    if (!editingEmotionId) return;
+    const date      = document.getElementById('eEditDate').value;
+    const notes     = document.getElementById('eEditNotes').value.trim();
+    const customVal = document.getElementById('eEditCustom').value.trim();
+    const emotion   = editingEmotionVal === '__custom__' ? (customVal||null) : editingEmotionVal;
+
+    if (!date)    { showToast('Please select a date'); return; }
+    if (!emotion) { showToast('Please select an emotion'); return; }
+
+    try {
+      if (db) {
+        await updateDoc(doc(db, 'emotions', editingEmotionId), { date, emotion, notes });
+      } else {
+        const stored = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
+        const idx = stored.findIndex(e => e.id === editingEmotionId);
+        if (idx > -1) { stored[idx] = { ...stored[idx], date, emotion, notes }; }
+        localStorage.setItem('tt_emotions', JSON.stringify(stored));
+        emotions = stored;
+        renderEmotions();
+      }
+      closeEmotionEdit();
+      showToast('Updated ✓');
+    } catch(e) { console.error('saveEmotionEdit',e); showToast('Update failed'); }
+  };
+
+  window.deleteEmotion = async function() {
+    if (!editingEmotionId) return;
+    if (!confirm('Delete this entry?')) return;
+    try {
+      if (db) {
+        await deleteDoc(doc(db, 'emotions', editingEmotionId));
+      } else {
+        const stored = JSON.parse(localStorage.getItem('tt_emotions')||'[]').filter(e => e.id !== editingEmotionId);
+        localStorage.setItem('tt_emotions', JSON.stringify(stored));
+        emotions = stored;
+        renderEmotions();
+      }
+      closeEmotionEdit();
+      showToast('Deleted');
+    } catch(e) { console.error('deleteEmotion',e); showToast('Delete failed'); }
+  };
 
   /* ── Init ────────────────────────────────────── */
   document.getElementById('headerDate').textContent =
@@ -2896,5 +3079,33 @@
   syncTargetFromFirestore();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+
+<!-- ─── Emotion Edit Modal ──────────────────────── -->
+<div id="emotionEditModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px;width:90%;max-width:400px;max-height:90vh;overflow-y:auto">
+    <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">✏️ Edit Emotion</div>
+
+    <label class="form-label">Date</label>
+    <input class="form-control" type="date" id="eEditDate" style="margin-bottom:10px">
+
+    <label class="form-label">Emotion</label>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionEditChips">
+      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Calm / Focused">😌 Calm</button>
+      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Anxious / Nervous">😰 Anxious</button>
+      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Excited / Overconfident">🤩 Excited</button>
+      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Frustrated / Angry">😤 Frustrated</button>
+      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="FOMO">😬 FOMO</button>
+      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="__custom__">✏️ Custom</button>
+    </div>
+    <input class="form-control" type="text" id="eEditCustom" placeholder="Describe your emotion…" style="display:none;margin-bottom:12px">
+
+    <label class="form-label">Notes / Journal</label>
+    <textarea class="form-control" id="eEditNotes" rows="3" style="margin-bottom:14px;resize:vertical"></textarea>
+
+    <button class="btn btn-primary" onclick="saveEmotionEdit()" style="width:100%;margin-bottom:8px">Save Changes</button>
+    <button class="btn btn-danger"  onclick="deleteEmotion()"   style="width:100%;margin-bottom:8px">Delete Entry</button>
+    <button onclick="closeEmotionEdit()" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer">Cancel</button>
+  </div>
+</div>
 </body>
 </html>
