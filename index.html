@@ -2905,19 +2905,7 @@
     const emoSorted = Object.entries(byEmo).sort((a,b)=>b[1]-a[1]);
     const canvasId = 'chartEmotions';
 
-    el.innerHTML = `
-      <div class="chart-box" style="margin-bottom:12px"><canvas id="${canvasId}" height="160"></canvas></div>
-      <div style="margin-bottom:16px">
-        ${emoSorted.map(([emo,cnt])=>`
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:11px;color:var(--text);font-weight:600">${EMOTION_ICONS[emo]||'💭'} ${emo}</span>
-            <span style="display:flex;align-items:baseline;gap:5px">
-              <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--accent3)">${Math.round(cnt/total*100)}%</span>
-              <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono)">(${cnt})</span>
-            </span>
-          </div>`).join('')}
-      </div>
-`;
+    el.innerHTML = `<div class="chart-box" style="margin-bottom:12px"><canvas id="${canvasId}" height="160"></canvas></div>`;
 
     const existing = Chart.getChart(canvasId);
     if (existing) existing.destroy();
@@ -2927,16 +2915,20 @@
         labels: emoSorted.map(([e])=>(EMOTION_ICONS[e]||'💭')+' '+e.split('/')[0].trim()),
         datasets:[{ data:emoSorted.map(([,v])=>Math.round(v/total*100)),
           backgroundColor:['#00e5b0','#ef4444','#7c5cfc','#fbbf24','#00d4ff','#ff6b35'],
-          borderRadius:6 }]
+          borderRadius:6, suffix:'%' }]
       },
       options:{
-        plugins:{ legend:{ display:false } },
+        plugins:{
+          legend:{ display:false },
+          datalabels:{ anchor:'end', align:'top', color:'#c9d6f0', font:{size:10,weight:'700',family:'Rajdhani,sans-serif'}, formatter:v=>v+'%' }
+        },
         scales:{
           x:{ ticks:{ color:'#6b7a99', font:{size:8} }, grid:{ color:'#1e2d45' } },
           y:{ ticks:{ color:'#6b7a99', font:{size:9}, callback:v=>v+'%' }, grid:{ color:'#1e2d45' }, beginAtZero:true, max:100 }
         },
         responsive:true
-      }
+      },
+      plugins:[ChartDataLabels]
     });
   }
 
