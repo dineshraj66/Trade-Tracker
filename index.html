@@ -1151,7 +1151,7 @@
 </div>
 
 <!-- ─── Emotion Entry Modal ───────────────────────── -->
-<div class="leave-modal-overlay" id="emotionModalOverlay" onclick="closeEmotionModal()" style="display:none">
+<div class="leave-modal-overlay" id="emotionModalOverlay" style="display:none">
   <div class="leave-modal" onclick="event.stopPropagation()">
     <div class="leave-modal-title">🧠 Post Session Emotions</div>
 
@@ -1172,8 +1172,8 @@
     <label class="form-label">Notes / Journal</label>
     <textarea class="form-control" id="eNotes" rows="3" placeholder="What were you feeling and why?…" style="margin-bottom:14px;resize:vertical"></textarea>
 
-    <button class="btn btn-primary" onclick="saveEmotion()" style="width:100%;margin-bottom:8px">Save</button>
-    <button class="btn" onclick="closeEmotionModal()" style="width:100%;background:var(--bg3);color:var(--muted)">Cancel</button>
+    <button class="btn btn-primary" id="saveEmotionBtn" style="width:100%;margin-bottom:8px">Save</button>
+    <button class="btn" id="cancelEmotionBtn" style="width:100%;background:var(--bg3);color:var(--muted)">Cancel</button>
   </div>
 </div>
 
@@ -2724,6 +2724,18 @@
     window.scrollToEmotionForm();
   });
 
+  // Bind emotion modal buttons
+  document.getElementById('saveEmotionBtn').addEventListener('click', window.saveEmotion);
+  document.getElementById('cancelEmotionBtn').addEventListener('click', window.closeEmotionModal);
+  document.getElementById('emotionModalOverlay').addEventListener('click', function(e) {
+    if (e.target === this) window.closeEmotionModal();
+  });
+
+  // Bind edit modal buttons
+  document.getElementById('saveEmotionEditBtn').addEventListener('click', window.saveEmotionEdit);
+  document.getElementById('deleteEmotionBtn').addEventListener('click', window.deleteEmotion);
+  document.getElementById('cancelEmotionEditBtn').addEventListener('click', window.closeEmotionEdit);
+
   /* ── Emotions ────────────────────────────────── */
   let emotions = [];
   let selectedPhase   = 'post';
@@ -2777,12 +2789,22 @@
     ];
     container.innerHTML = allChips.map(e => `
       <button class="emotion-chip${e.custom ? ' custom-saved' : ''}"
-        onclick="selectEmotion(this)" data-val="${e.val}"
-        style="position:relative">
+        data-val="${e.val}" style="position:relative">
         ${e.label}
-        ${e.custom ? `<span onclick="event.stopPropagation();removeCustomEmotion('${e.val}',this.parentElement)"
+        ${e.custom ? `<span data-remove="${e.val}"
           style="margin-left:4px;color:#ef4444;font-size:10px;line-height:1">×</span>` : ''}
       </button>`).join('');
+    container.querySelectorAll('.emotion-chip').forEach(btn => {
+      btn.addEventListener('click', function(ev) {
+        const removeBtn = ev.target.closest('[data-remove]');
+        if (removeBtn) {
+          ev.stopPropagation();
+          window.removeCustomEmotion(removeBtn.dataset.remove, btn);
+          return;
+        }
+        window.selectEmotion(btn);
+      });
+    });
   }
 
   window.removeCustomEmotion = async function(val, btn) {
@@ -2989,26 +3011,37 @@
     document.getElementById('eEditDate').value  = entry.date || '';
     document.getElementById('eEditNotes').value = entry.notes || '';
 
-    // Set chips
-    const KNOWN = ['Calm / Focused','Anxious / Nervous','Excited / Overconfident','Frustrated / Angry','FOMO'];
-    document.querySelectorAll('#emotionEditChips .emotion-chip').forEach(b => {
-      b.classList.remove('active');
-      if (b.dataset.val === entry.emotion) b.classList.add('active');
+    // Render chips dynamically (same as main form) and bind via JS
+    const container = document.getElementById('emotionEditChips');
+    const saved = getSavedEmotions();
+    const allChips = [
+      ...DEFAULT_EMOTIONS,
+      ...saved.map(v => ({ val:v, label:'💭 '+v, custom:true })),
+      { val:'__custom__', label:'✏️ Custom' }
+    ];
+    container.innerHTML = allChips.map(e =>
+      `<button class="emotion-chip" data-val="${e.val}">${e.label}</button>`
+    ).join('');
+    container.querySelectorAll('.emotion-chip').forEach(btn => {
+      if (btn.dataset.val === entry.emotion) btn.classList.add('active');
+      btn.addEventListener('click', function() { window.selectEditEmotion(this); });
     });
+
+    // Handle custom emotion not in known list
+    const KNOWN = DEFAULT_EMOTIONS.map(e=>e.val);
     const isCustom = !KNOWN.includes(entry.emotion);
-    const customChip = document.querySelector('#emotionEditChips [data-val="__custom__"]');
     const customInput = document.getElementById('eEditCustom');
     if (isCustom) {
-      if (customChip) customChip.classList.add('active');
       customInput.style.display = 'block';
       customInput.value = entry.emotion;
+      const customChip = container.querySelector('[data-val="__custom__"]');
+      if (customChip) customChip.classList.add('active');
     } else {
       customInput.style.display = 'none';
       customInput.value = '';
     }
 
-    const modal = document.getElementById('emotionEditModal');
-    modal.style.display = 'flex';
+    document.getElementById('emotionEditModal').style.display = 'flex';
   };
 
   window.selectEditEmotion = function(el) {
@@ -3089,22 +3122,15 @@
     <input class="form-control" type="date" id="eEditDate" style="margin-bottom:10px">
 
     <label class="form-label">Emotion</label>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionEditChips">
-      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Calm / Focused">😌 Calm</button>
-      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Anxious / Nervous">😰 Anxious</button>
-      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Excited / Overconfident">🤩 Excited</button>
-      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="Frustrated / Angry">😤 Frustrated</button>
-      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="FOMO">😬 FOMO</button>
-      <button class="emotion-chip" onclick="selectEditEmotion(this)" data-val="__custom__">✏️ Custom</button>
-    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionEditChips"></div>
     <input class="form-control" type="text" id="eEditCustom" placeholder="Describe your emotion…" style="display:none;margin-bottom:12px">
 
     <label class="form-label">Notes / Journal</label>
     <textarea class="form-control" id="eEditNotes" rows="3" style="margin-bottom:14px;resize:vertical"></textarea>
 
-    <button class="btn btn-primary" onclick="saveEmotionEdit()" style="width:100%;margin-bottom:8px">Save Changes</button>
-    <button class="btn btn-danger"  onclick="deleteEmotion()"   style="width:100%;margin-bottom:8px">Delete Entry</button>
-    <button onclick="closeEmotionEdit()" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer">Cancel</button>
+    <button class="btn btn-primary" id="saveEmotionEditBtn" style="width:100%;margin-bottom:8px">Save Changes</button>
+    <button class="btn btn-danger"  id="deleteEmotionBtn"   style="width:100%;margin-bottom:8px">Delete Entry</button>
+    <button id="cancelEmotionEditBtn" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer">Cancel</button>
   </div>
 </div>
 </body>
