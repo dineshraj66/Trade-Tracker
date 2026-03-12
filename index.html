@@ -1159,14 +1159,7 @@
     <input class="form-control" type="date" id="eDate" style="margin-bottom:12px">
 
     <label class="form-label">Emotion</label>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Calm / Focused">😌 Calm</button>
-      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Anxious / Nervous">😰 Anxious</button>
-      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Excited / Overconfident">🤩 Excited</button>
-      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="Frustrated / Angry">😤 Frustrated</button>
-      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="FOMO">😬 FOMO</button>
-      <button class="emotion-chip" onclick="selectEmotion(this)" data-val="__custom__">✏️ Custom</button>
-    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionChips"></div>
     <input class="form-control" type="text" id="eCustom" placeholder="Describe your emotion…" style="display:none;margin-bottom:12px">
 
     <label class="form-label">Notes / Journal</label>
