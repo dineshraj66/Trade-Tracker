@@ -2713,21 +2713,7 @@
     renderEmotionChips();
   };
 
-  document.getElementById('fabEmotionBtn').addEventListener('click', function() {
-    window.scrollToEmotionForm();
-  });
 
-  // Bind emotion modal buttons
-  document.getElementById('saveEmotionBtn').addEventListener('click', window.saveEmotion);
-  document.getElementById('cancelEmotionBtn').addEventListener('click', window.closeEmotionModal);
-  document.getElementById('emotionModalOverlay').addEventListener('click', function(e) {
-    if (e.target === this) window.closeEmotionModal();
-  });
-
-  // Bind edit modal buttons
-  document.getElementById('saveEmotionEditBtn').addEventListener('click', window.saveEmotionEdit);
-  document.getElementById('deleteEmotionBtn').addEventListener('click', window.deleteEmotion);
-  document.getElementById('cancelEmotionEditBtn').addEventListener('click', window.closeEmotionEdit);
 
   /* ── Emotions ────────────────────────────────── */
   let emotions = [];
@@ -3104,6 +3090,11 @@
   loadEmotions();
   syncTargetFromFirestore();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+  // ── Emotion modal button bindings (must be after all functions defined) ──
+  document.getElementById('saveEmotionBtn').addEventListener('click', function() { window.saveEmotion(); });
+  document.getElementById('cancelEmotionBtn').addEventListener('click', function() { window.closeEmotionModal(); });
+  document.getElementById('emotionModalOverlay').addEventListener('click', function(e) { if (e.target === this) window.closeEmotionModal(); });
 </script>
 
 <!-- ─── Emotion Edit Modal ──────────────────────── -->
@@ -3127,4 +3118,17 @@
   </div>
 </div>
 </body>
+<script>
+  // Bind edit modal buttons (HTML is after module script, so bind here)
+  window.addEventListener('load', function() {
+    var s = document.getElementById('saveEmotionEditBtn');
+    var d = document.getElementById('deleteEmotionBtn');
+    var c = document.getElementById('cancelEmotionEditBtn');
+    if (s) s.addEventListener('click', function() { window.saveEmotionEdit(); });
+    if (d) d.addEventListener('click', function() { window.deleteEmotion(); });
+    if (c) c.addEventListener('click', function() { window.closeEmotionEdit(); });
+    var fab = document.getElementById('fabEmotionBtn');
+    if (fab) fab.addEventListener('click', function() { window.scrollToEmotionForm(); });
+  });
+</script>
 </html>
