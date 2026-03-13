@@ -2803,9 +2803,7 @@
     'Excited / Overconfident':'🤩','Frustrated / Angry':'😤','FOMO':'😬'
   };
 
-  // Set today's date default for emotion form
-  const eDateEl = document.getElementById('eDate');
-  if (eDateEl) eDateEl.value = localISO(new Date());
+  // Set today's date default for emotion form (done when modal opens)
 
   window.closeEmotionModal = function() {
     const overlay = document.getElementById('emotionModalOverlay');
@@ -2875,14 +2873,28 @@
       renderEmotions();
       return;
     }
+    // Timeout fallback — if Firestore hasn't responded in 5s, render what we have
+    const fallback = setTimeout(() => {
+      if (!emotionsLoaded) { emotionsLoaded = true; renderEmotions(); }
+    }, 5000);
     try {
       onSnapshot(collection(db, 'emotions'), snap => {
+        clearTimeout(fallback);
+        emotionsLoaded = true;
         emotions = snap.docs.map(d => ({ id:d.id, ...d.data() }));
         emotions.sort((a,b) => (b.ts||0)-(a.ts||0));
         renderEmotions();
       });
-    } catch(e) { console.warn('loadEmotions',e); }
+    } catch(e) {
+      clearTimeout(fallback);
+      emotionsLoaded = true;
+      console.warn('loadEmotions',e);
+      emotions = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
+      renderEmotions();
+    }
   }
+
+  let emotionsLoaded = false;
 
   function renderEmotions() {
     renderEmotionStats();
@@ -2892,6 +2904,10 @@
   function renderEmotionStats() {
     const el = document.getElementById('emotionStats');
     if (!el) return;
+    if (!emotionsLoaded) {
+      el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+      return;
+    }
     if (!emotions.length) {
       el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No emotions logged yet</div>';
       return;
@@ -2909,32 +2925,34 @@
 
     const existing = Chart.getChart(canvasId);
     if (existing) existing.destroy();
+    const emoInlinePlugin = { id:'emoDL', afterDatasetsDraw(chart) { const ctx=chart.ctx; chart.data.datasets.forEach((ds,i)=>{ chart.getDatasetMeta(i).data.forEach((bar,idx)=>{ const v=ds.data[idx]; if(v==null)return; ctx.save(); ctx.fillStyle='#e8edf5'; ctx.font='bold 9px Space Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.fillText(v+'%',bar.x,bar.y-2); ctx.restore(); }); }); } };
     new Chart(document.getElementById(canvasId), {
       type:'bar',
       data:{
         labels: emoSorted.map(([e])=>(EMOTION_ICONS[e]||'💭')+' '+e.split('/')[0].trim()),
         datasets:[{ data:emoSorted.map(([,v])=>Math.round(v/total*100)),
           backgroundColor:['#00e5b0','#ef4444','#7c5cfc','#fbbf24','#00d4ff','#ff6b35'],
-          borderRadius:6, suffix:'%' }]
+          borderRadius:6 }]
       },
       options:{
-        plugins:{
-          legend:{ display:false },
-          datalabels:{ anchor:'end', align:'top', color:'#c9d6f0', font:{size:10,weight:'700',family:'Rajdhani,sans-serif'}, formatter:v=>v+'%' }
-        },
+        plugins:{ legend:{ display:false } },
         scales:{
           x:{ ticks:{ color:'#6b7a99', font:{size:8} }, grid:{ color:'#1e2d45' } },
           y:{ ticks:{ color:'#6b7a99', font:{size:9}, callback:v=>v+'%' }, grid:{ color:'#1e2d45' }, beginAtZero:true, max:100 }
         },
         responsive:true
       },
-      plugins:[datalabelsPlugin]
+      plugins:[emoInlinePlugin]
     });
   }
 
   function renderEmotionHistory() {
     const el = document.getElementById('emotionHistory');
     if (!el) return;
+    if (!emotionsLoaded) {
+      el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+      return;
+    }
     if (!emotions.length) {
       el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No entries yet</div>';
       return;
