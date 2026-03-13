@@ -1333,6 +1333,7 @@
 
   let db        = null;
   let trades    = [];
+  let emotionsLoaded = false;
   let editingId = null;
   let currentPeriod = 'all';
   let charts = {};
@@ -1639,7 +1640,11 @@
     const fabEmo = document.getElementById('fabEmotionBtn');
     if (fabEmo) tab==='emotions' ? fabEmo.classList.remove('fab-hidden') : fabEmo.classList.add('fab-hidden');
     if (tab==='home')     renderHome();
-    if (tab==='emotions') renderEmotions();
+    if (tab==='emotions') {
+      const ec = Chart.getChart('chartEmotions');
+      if (ec) ec.destroy();
+      renderEmotions();
+    }
   };
 
   /* ── filterByPeriod (used internally) ─────────── */
@@ -2869,6 +2874,7 @@
   function loadEmotions() {
     loadCustomEmotions();
     if (!db) {
+      emotionsLoaded = true;
       emotions = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
       renderEmotions();
       return;
@@ -2893,8 +2899,6 @@
       renderEmotions();
     }
   }
-
-  let emotionsLoaded = false;
 
   function renderEmotions() {
     renderEmotionStats();
