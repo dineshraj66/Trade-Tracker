@@ -1745,8 +1745,8 @@
       // All custom leaves/events
       const customCount = leaves.length;
 
-      // Total trading days = weekdays - NSE holidays - custom events
-      const totalTradingDays = totalWeekdays - nseCount - customCount;
+      // Total trading days = weekdays - NSE holidays only (leaves don't reduce total)
+      const totalTradingDays = totalWeekdays - nseCount;
 
       // Pending = future weekdays excluding future NSE holidays and future custom events
       let pending = 0;
@@ -1757,7 +1757,7 @@
       const p = new Date(tomorrow);
       while (p < end) {
         const iso = localISO(p);
-        if (p.getDay() !== 0 && p.getDay() !== 6 && !nseSet.has(iso) && !leaveSet.has(iso)) pending++;
+        if (p.getDay() !== 0 && p.getDay() !== 6 && !nseSet.has(iso)) pending++;
         p.setDate(p.getDate() + 1);
       }
 
