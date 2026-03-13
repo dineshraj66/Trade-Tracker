@@ -1641,9 +1641,11 @@
     if (fabEmo) tab==='emotions' ? fabEmo.classList.remove('fab-hidden') : fabEmo.classList.add('fab-hidden');
     if (tab==='home')     renderHome();
     if (tab==='emotions') {
+      // Destroy chart first so it redraws at correct size
       const ec = Chart.getChart('chartEmotions');
-      if (ec) ec.destroy();
-      renderEmotions();
+      if (ec) { ec.destroy(); }
+      // Small delay so the page is visible before chart draws
+      setTimeout(renderEmotions, 50);
     }
   };
 
@@ -2879,23 +2881,27 @@
       renderEmotions();
       return;
     }
-    // Timeout fallback — if Firestore hasn't responded in 5s, render what we have
-    const fallback = setTimeout(() => {
-      if (!emotionsLoaded) { emotionsLoaded = true; renderEmotions(); }
-    }, 5000);
-    try {
-      onSnapshot(collection(db, 'emotions'), snap => {
-        clearTimeout(fallback);
+    onSnapshot(
+      collection(db, 'emotions'),
+      snap => {
         emotionsLoaded = true;
         emotions = snap.docs.map(d => ({ id:d.id, ...d.data() }));
         emotions.sort((a,b) => (b.ts||0)-(a.ts||0));
+        localStorage.setItem('tt_emotions', JSON.stringify(emotions));
         renderEmotions();
-      });
-    } catch(e) {
-      clearTimeout(fallback);
+      },
+      err => {
+        console.warn('loadEmotions error', err);
+        emotionsLoaded = true;
+        emotions = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
+        renderEmotions();
+      }
+    );
+    // Show cached data immediately while Firestore loads
+    const cached = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
+    if (cached.length) {
+      emotions = cached;
       emotionsLoaded = true;
-      console.warn('loadEmotions',e);
-      emotions = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
       renderEmotions();
     }
   }
