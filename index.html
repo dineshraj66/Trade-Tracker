@@ -1435,7 +1435,7 @@
     }
   } catch(e) {
     console.warn('Firebase init failed', e);
-    document.getElementById('syncStatus').textContent = '🔴 Error';
+    document.getElementById('syncStatus').textContent = '🔴 ' + (e.code || e.message || 'Error');
   }
 
   /* ── Helpers ─────────────────────────────────── */
