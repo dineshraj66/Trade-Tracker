@@ -1115,6 +1115,18 @@
 <div class="page" id="page-emotions">
   <div style="padding:16px">
 
+    <!-- Phase Toggle -->
+    <div style="display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:16px">
+      <button id="viewPostBtn" onclick="setEmotionView('post')"
+        style="flex:1;padding:8px;border:none;border-radius:9px;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;background:#7c5cfc;color:#fff">
+        📋 Post Session
+      </button>
+      <button id="viewLiveBtn" onclick="setEmotionView('live')"
+        style="flex:1;padding:8px;border:none;border-radius:9px;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--muted)">
+        ⚡ Live Trade
+      </button>
+    </div>
+
     <!-- Stats -->
     <div class="card" style="margin-bottom:16px">
       <div class="card-title" style="margin-bottom:12px">📊 Emotion Stats</div>
@@ -1133,10 +1145,43 @@
 <!-- ─── Emotion Entry Modal ───────────────────────── -->
 <div class="leave-modal-overlay" id="emotionModalOverlay" style="display:none">
   <div class="leave-modal" onclick="event.stopPropagation()">
-    <div class="leave-modal-title">🧠 Post Session Emotions</div>
+    <div class="leave-modal-title" id="emotionModalTitle">Post Session</div>
+
+    <!-- Phase Toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="phase-btn active" id="phasePostBtn" data-phase="post">📋 Post Session</button>
+      <button class="phase-btn" id="phaseLiveBtn" data-phase="live">⚡ Live Trade</button>
+    </div>
 
     <label class="form-label">Date</label>
     <input class="form-control" type="date" id="eDate" style="margin-bottom:12px">
+
+    <!-- Time field — only for Live Trade -->
+    <div id="eTimeRow" style="display:none;margin-bottom:12px">
+      <label class="form-label">Time</label>
+      <input class="form-control" type="time" id="eTime">
+    </div>
+
+    <!-- Live Trade Checklist -->
+    <div id="liveChecklist" style="display:none;background:rgba(255,107,53,0.07);border:1px solid rgba(255,107,53,0.25);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--accent2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.8px">Pre-Trade Checklist</div>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="chkValues" onchange="updateChecklist()">
+        <span style="font-size:11px;color:var(--text)">Values Verified</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer">
+        <input type="checkbox" id="chkLayout" onchange="updateChecklist()">
+        <span style="font-size:11px;color:var(--text)">Switch Layout</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer">
+        <input type="checkbox" id="chkAlert" onchange="updateChecklist()">
+        <span style="font-size:11px;color:var(--text)">Deactivate Alert / Collapse Watchlist</span>
+      </label>
+      <!-- Control message — shown when all checked -->
+      <div id="tradeControlMsg" style="display:none;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.3);border-radius:8px;padding:10px;text-align:center;font-size:11px;font-weight:600;color:var(--accent);line-height:1.5">
+        ✅ Your trade is in control<br>Just relax and monitor every 15 mins
+      </div>
+    </div>
 
     <label class="form-label">Emotion</label>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionChips"></div>
@@ -1314,6 +1359,7 @@
   let db        = null;
   let trades    = [];
   let emotionsLoaded = false;
+  let activeEmotionView = 'post'; // 'post' or 'live'
   let editingId = null;
   let currentPeriod = 'all';
   let charts = {};
@@ -2698,6 +2744,38 @@
     if (overlay) overlay.style.display = 'flex';
     const eDateEl = document.getElementById('eDate');
     if (eDateEl) eDateEl.value = localISO(new Date());
+
+    // Set phase to match current view toggle
+    selectedPhase = activeEmotionView;
+
+    // Update phase toggle buttons in modal
+    document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.getElementById(selectedPhase === 'live' ? 'phaseLiveBtn' : 'phasePostBtn');
+    if (activeBtn) activeBtn.classList.add('active');
+
+    // Show/hide time row
+    const timeRow = document.getElementById('eTimeRow');
+    if (timeRow) timeRow.style.display = selectedPhase === 'live' ? 'block' : 'none';
+    if (selectedPhase === 'live') {
+      const now = new Date();
+      document.getElementById('eTime').value =
+        String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    }
+
+    // Update modal title
+    const title = document.getElementById('emotionModalTitle');
+    if (title) title.textContent = selectedPhase === 'live' ? 'Live Trade' : 'Post Session';
+
+    // Show/hide checklist
+    const cl = document.getElementById('liveChecklist');
+    if (cl) cl.style.display = selectedPhase === 'live' ? 'block' : 'none';
+    // Reset checklist
+    ['chkValues','chkLayout','chkAlert'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.checked = false;
+    });
+    const msg = document.getElementById('tradeControlMsg');
+    if (msg) msg.style.display = 'none';
+    selectedEmotion = null;
     renderEmotionChips();
   };
 
@@ -2708,14 +2786,25 @@
   let selectedPhase   = 'post';
   let selectedEmotion = null;
 
-  const PHASE_LABELS = { pre:'Pre Session', ongoing:'Ongoing', post:'Post Trade' };
-  const DEFAULT_EMOTIONS = [
-    { val:'Calm / Focused',         label:'😌 Calm' },
-    { val:'Anxious / Nervous',      label:'😰 Anxious' },
-    { val:'Excited / Overconfident',label:'🤩 Excited' },
-    { val:'Frustrated / Angry',     label:'😤 Frustrated' },
-    { val:'FOMO',                   label:'😬 FOMO' },
-  ];
+  const PHASE_LABELS = { post:'Post Session', live:'Live Trade' };
+  const DEFAULT_EMOTIONS = {
+    post: [
+      { val:'Calm / Focused',         label:'😌 Calm' },
+      { val:'Anxious / Nervous',      label:'😰 Anxious' },
+      { val:'Excited / Overconfident',label:'🤩 Excited' },
+      { val:'Frustrated / Angry',     label:'😤 Frustrated' },
+      { val:'FOMO',                   label:'😬 FOMO' },
+    ],
+    live: [
+      { val:'Calm / Trusting',        label:'😌 Calm' },
+      { val:'Anxious / Fearful',      label:'😰 Anxious' },
+      { val:'Impatient',              label:'😤 Impatient' },
+      { val:'Greedy',                 label:'🤑 Greedy' },
+      { val:'FOMO',                   label:'😬 FOMO' },
+      { val:'Urge to Exit Early',     label:'🚪 Exit Early' },
+      { val:'Detached / Neutral',     label:'🧘 Detached' },
+    ],
+  };
 
   // Custom emotions — synced via Firestore, localStorage as fallback
   let customEmotions = JSON.parse(localStorage.getItem('tt_custom_emotions') || '[]');
@@ -2749,8 +2838,9 @@
     const container = document.getElementById('emotionChips');
     if (!container) return;
     const saved = getSavedEmotions();
+    const phaseDefaults = DEFAULT_EMOTIONS[selectedPhase] || DEFAULT_EMOTIONS.post;
     const allChips = [
-      ...DEFAULT_EMOTIONS,
+      ...phaseDefaults,
       ...saved.map(v => ({ val: v, label: '💭 ' + v, custom: true })),
       { val: '__custom__', label: '✏️ Custom' }
     ];
@@ -2785,7 +2875,7 @@
     renderEmotionChips();
     if (selectedEmotion === val) selectedEmotion = null;
   };
-  const PHASE_COLORS = { pre:'#00e5b0', ongoing:'#00d4ff', post:'#7c5cfc' };
+  const PHASE_COLORS = { post:'#7c5cfc', live:'#ff6b35' };
   const EMOTION_ICONS = {
     'Calm / Focused':'😌','Anxious / Nervous':'😰',
     'Excited / Overconfident':'🤩','Frustrated / Angry':'😤','FOMO':'😬'
@@ -2793,15 +2883,30 @@
 
   // Set today's date default for emotion form (done when modal opens)
 
+  window.updateChecklist = function() {
+    const allChecked = ['chkValues','chkLayout','chkAlert'].every(id => {
+      const el = document.getElementById(id); return el && el.checked;
+    });
+    const msg = document.getElementById('tradeControlMsg');
+    if (msg) msg.style.display = allChecked ? 'block' : 'none';
+  };
+
   window.closeEmotionModal = function() {
     const overlay = document.getElementById('emotionModalOverlay');
     if (overlay) overlay.style.display = 'none';
-    // Reset form
     document.getElementById('eNotes').value = '';
     document.getElementById('eCustom').value = '';
     document.getElementById('eCustom').style.display = 'none';
     document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
+    ['chkValues','chkLayout','chkAlert'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.checked = false;
+    });
+    const msg = document.getElementById('tradeControlMsg');
+    if (msg) msg.style.display = 'none';
+    const cl = document.getElementById('liveChecklist');
+    if (cl) cl.style.display = 'none';
     selectedEmotion = null;
+    selectedPhase = 'post';
   };
 
   window.selectEmotion = function(el) {
@@ -2820,14 +2925,22 @@
     const notes     = document.getElementById('eNotes').value.trim();
     const customVal = document.getElementById('eCustom').value.trim();
     const emotion   = selectedEmotion === '__custom__' ? (customVal||null) : selectedEmotion;
+    const timeVal   = selectedPhase === 'live' ? (document.getElementById('eTime').value || '') : '';
 
     if (!date)    { showToast('Please select a date'); return; }
     if (!emotion) { showToast('Please select an emotion'); return; }
 
-    const entry = { date, phase: selectedPhase, emotion, notes, ts: Date.now() };
+    const checklist = selectedPhase === 'live' ? {
+      valuesVerified: document.getElementById('chkValues')?.checked || false,
+      switchLayout:   document.getElementById('chkLayout')?.checked || false,
+      deactivateAlert:document.getElementById('chkAlert')?.checked  || false,
+    } : null;
+    const entry = { date, phase: selectedPhase, emotion, notes, ts: Date.now(),
+      ...(timeVal && { time: timeVal }),
+      ...(checklist && { checklist }) };
 
     // Persist custom emotion for future use
-    const knownEmos = DEFAULT_EMOTIONS.map(e=>e.val);
+    const knownEmos = [...(DEFAULT_EMOTIONS.post||[]), ...(DEFAULT_EMOTIONS.live||[])].map(e=>e.val);
     if (!knownEmos.includes(emotion)) {
       await saveCustomEmotion(emotion);
       renderEmotionChips();
@@ -2887,6 +3000,26 @@
     }
   }
 
+  window.setEmotionView = function(view) {
+    activeEmotionView = view;
+    // Update toggle button styles
+    const postBtn = document.getElementById('viewPostBtn');
+    const liveBtn = document.getElementById('viewLiveBtn');
+    if (postBtn && liveBtn) {
+      if (view === 'post') {
+        postBtn.style.background = '#7c5cfc'; postBtn.style.color = '#fff';
+        liveBtn.style.background = 'transparent'; liveBtn.style.color = 'var(--muted)';
+      } else {
+        liveBtn.style.background = '#ff6b35'; liveBtn.style.color = '#fff';
+        postBtn.style.background = 'transparent'; postBtn.style.color = 'var(--muted)';
+      }
+    }
+    // Destroy chart so it redraws cleanly
+    const ec = Chart.getChart('chartEmotions');
+    if (ec) ec.destroy();
+    renderEmotions();
+  };
+
   function renderEmotions() {
     renderEmotionStats();
     renderEmotionHistory();
@@ -2899,20 +3032,32 @@
       el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
       return;
     }
-    if (!emotions.length) {
-      el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No emotions logged yet</div>';
+    const filtered = emotions.filter(e => (e.phase||'post') === activeEmotionView);
+    const byEmo = {}, byPhaseCount = { post:0, live:0 };
+    emotions.forEach(e => { if (byPhaseCount[e.phase] !== undefined) byPhaseCount[e.phase]++; });
+    filtered.forEach(e => { byEmo[e.emotion] = (byEmo[e.emotion]||0)+1; });
+    const total = filtered.length;
+    const emoSorted = Object.entries(byEmo).sort((a,b)=>b[1]-a[1]);
+    if (!filtered.length) {
+      el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No ${activeEmotionView==='live'?'Live Trade':'Post Session'} emotions logged yet</div>`;
       return;
     }
-    const byEmo = {}, byPhase = { pre:{}, ongoing:{}, post:{} };
-    emotions.forEach(e => {
-      byEmo[e.emotion] = (byEmo[e.emotion]||0)+1;
-      if (byPhase[e.phase]) byPhase[e.phase][e.emotion] = (byPhase[e.phase][e.emotion]||0)+1;
-    });
-    const total = emotions.length;
-    const emoSorted = Object.entries(byEmo).sort((a,b)=>b[1]-a[1]);
     const canvasId = 'chartEmotions';
 
-    el.innerHTML = `<div class="chart-box" style="margin-bottom:12px"><canvas id="${canvasId}" height="160"></canvas></div>`;
+    const postCount = byPhaseCount.post || 0;
+    const liveCount = byPhaseCount.live || 0;
+    el.innerHTML = `
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:rgba(124,92,252,0.1);border:1px solid rgba(124,92,252,0.2)">
+          <div style="font-family:var(--font-head);font-size:18px;font-weight:800;color:#7c5cfc">${postCount}</div>
+          <div style="font-size:9px;color:var(--muted)">📋 Post Session</div>
+        </div>
+        <div style="flex:1;text-align:center;padding:8px;border-radius:8px;background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.2)">
+          <div style="font-family:var(--font-head);font-size:18px;font-weight:800;color:#ff6b35">${liveCount}</div>
+          <div style="font-size:9px;color:var(--muted)">⚡ Live Trade</div>
+        </div>
+      </div>
+      <div class="chart-box" style="margin-bottom:12px"><canvas id="${canvasId}" height="160"></canvas></div>`;
 
     const existing = Chart.getChart(canvasId);
     if (existing) existing.destroy();
@@ -2944,12 +3089,13 @@
       el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
       return;
     }
-    if (!emotions.length) {
-      el.innerHTML='<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No entries yet</div>';
+    const filtered = emotions.filter(e => (e.phase||'post') === activeEmotionView);
+    if (!filtered.length) {
+      el.innerHTML=`<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No ${activeEmotionView==='live'?'Live Trade':'Post Session'} entries yet</div>`;
       return;
     }
     const byDate = {};
-    emotions.forEach(e => { if(!byDate[e.date]) byDate[e.date]=[]; byDate[e.date].push(e); });
+    filtered.forEach(e => { if(!byDate[e.date]) byDate[e.date]=[]; byDate[e.date].push(e); });
     const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -2966,17 +3112,68 @@
             return `
               <div class="emotion-entry">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start">
-                  <div>
-                    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">${EMOTION_ICONS[e.emotion]||'💭'} ${e.emotion}</div>
-                    ${e.notes?`<div style="font-size:10px;color:var(--muted);line-height:1.5">${e.notes}</div>`:''}
+                  <div style="flex:1">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap">
+                      <span style="font-size:12px;font-weight:700;color:var(--text)">${EMOTION_ICONS[e.emotion]||'💭'} ${e.emotion}</span>
+                      ${e.time?`<span style="font-size:9px;color:var(--muted);font-family:var(--font-mono)">${e.time}</span>`:''}
+                    </div>
+                    ${e.notes?`<div style="font-size:10px;color:var(--muted);line-height:1.5;margin-bottom:4px">${e.notes}</div>`:''}
+                    ${e.checklist ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+                      <span style="font-size:9px;color:${e.checklist.valuesVerified?'var(--accent)':'var(--border)'}">
+                        ${e.checklist.valuesVerified?'✅':'⬜'} Values
+                      </span>
+                      <span style="font-size:9px;color:${e.checklist.switchLayout?'var(--accent)':'var(--border)'}">
+                        ${e.checklist.switchLayout?'✅':'⬜'} Layout
+                      </span>
+                      <span style="font-size:9px;color:${e.checklist.deactivateAlert?'var(--accent)':'var(--border)'}">
+                        ${e.checklist.deactivateAlert?'✅':'⬜'} Alert
+                      </span>
+                    </div>` : ''}
                   </div>
-                  <button onclick="openEmotionEdit('${e.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer;flex-shrink:0;margin-left:8px">✏️ Edit</button>
+                  <div style="display:flex;flex-direction:column;gap:4px;margin-left:8px;flex-shrink:0">
+                    <button onclick="openEmotionEdit('${e.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer">✏️ Edit</button>
+                    <button onclick="confirmDeleteEmotion('${e.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;font-size:10px;padding:3px 8px;cursor:pointer">🗑 Delete</button>
+                  </div>
                 </div>
               </div>`;
           }).join('')}
         </div>`;
     }).join('');
   }
+
+  window.confirmDeleteEmotion = function(id) {
+    const entry = emotions.find(e => e.id === id);
+    if (!entry) return;
+    // Build inline confirm using a small overlay toast
+    const existing = document.getElementById('deleteConfirmOverlay');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.id = 'deleteConfirmOverlay';
+    div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;display:flex;align-items:center;justify-content:center';
+    div.innerHTML = `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;width:80%;max-width:300px;text-align:center">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px">Delete Entry?</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:18px">${entry.emotion} · ${entry.date}</div>
+        <div style="display:flex;gap:10px">
+          <button id="confirmDelYes" style="flex:1;padding:10px;background:#ef4444;border:none;border-radius:8px;color:#fff;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer">Yes, Delete</button>
+          <button id="confirmDelNo"  style="flex:1;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(div);
+    document.getElementById('confirmDelNo').addEventListener('click', () => div.remove());
+    document.getElementById('confirmDelYes').addEventListener('click', async () => {
+      div.remove();
+      try {
+        if (db) { await deleteDoc(doc(db, 'emotions', id)); }
+        else {
+          emotions = emotions.filter(e => e.id !== id);
+          localStorage.setItem('tt_emotions', JSON.stringify(emotions));
+          renderEmotions();
+        }
+        showToast('Entry deleted');
+      } catch(e) { console.error(e); showToast('Delete failed'); }
+    });
+  };
 
   /* ── Emotion Edit / Delete ──────────────────────── */
   let editingEmotionId   = null;
@@ -3130,6 +3327,41 @@
     if (c) c.addEventListener('click', function() { window.closeEmotionEdit(); });
     var fab = document.getElementById('fabEmotionBtn');
     if (fab) fab.addEventListener('click', function() { window.scrollToEmotionForm(); });
+
+    // Phase toggle buttons
+    document.querySelectorAll('.phase-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.phase-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        selectedPhase = btn.dataset.phase;
+        // Update modal title
+        var title = document.getElementById('emotionModalTitle');
+        if (title) title.textContent = selectedPhase === 'live' ? 'Live Trade' : 'Post Session';
+        // Show/hide time row
+        var timeRow = document.getElementById('eTimeRow');
+        if (timeRow) timeRow.style.display = selectedPhase === 'live' ? 'block' : 'none';
+        // Set time to now if live
+        if (selectedPhase === 'live') {
+          var now = new Date();
+          var hh = String(now.getHours()).padStart(2,'0');
+          var mm = String(now.getMinutes()).padStart(2,'0');
+          document.getElementById('eTime').value = hh + ':' + mm;
+        }
+        // Show/hide checklist
+        var cl = document.getElementById('liveChecklist');
+        if (cl) cl.style.display = selectedPhase === 'live' ? 'block' : 'none';
+        if (selectedPhase !== 'live') {
+          ['chkValues','chkLayout','chkAlert'].forEach(function(id) {
+            var el = document.getElementById(id); if (el) el.checked = false;
+          });
+          var msg = document.getElementById('tradeControlMsg');
+          if (msg) msg.style.display = 'none';
+        }
+        // Reset chip selection and re-render for new phase
+        selectedEmotion = null;
+        renderEmotionChips();
+      });
+    });
   });
 </script>
 </html>
