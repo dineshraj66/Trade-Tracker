@@ -1200,8 +1200,8 @@
         ✅ Your trade is in control<br>Just relax and monitor every 15 mins
       </div>
       <!-- Motivational message -->
-      <div style="margin-top:10px;padding:10px;background:rgba(124,92,252,0.08);border-left:3px solid #7c5cfc;border-radius:0 8px 8px 0">
-        <div id="tradeMotivationMsg" style="font-size:10px;color:#7c5cfc;font-style:italic;line-height:1.6;font-family:var(--font-mono);transition:opacity 0.4s ease">"This trade is one of a thousand trades — the average of the series gives you success"</div>
+      <div id="motivationBox" style="margin-top:10px;padding:10px;border-left:3px solid #7c5cfc;border-radius:0 8px 8px 0;transition:background 0.8s ease,border-color 0.8s ease">
+        <div id="tradeMotivationMsg" style="font-size:11px;font-weight:600;font-style:italic;line-height:1.6;font-family:var(--font-mono);transition:opacity 0.4s ease,color 0.8s ease">"This trade is one of a thousand trades — the average of the series gives you success"</div>
       </div>
 
       <!-- Relaxation Reminders -->
@@ -3031,22 +3031,43 @@
   let motivationInterval = null;
   let motivationIdx = 0;
 
+  const MOTIVATION_COLORS = [
+    { text:'#00e5b0', bg:'rgba(0,229,176,0.1)',   border:'#00e5b0' },
+    { text:'#7c5cfc', bg:'rgba(124,92,252,0.12)', border:'#7c5cfc' },
+    { text:'#00d4ff', bg:'rgba(0,212,255,0.1)',   border:'#00d4ff' },
+    { text:'#ff6b35', bg:'rgba(255,107,53,0.1)',  border:'#ff6b35' },
+    { text:'#fbbf24', bg:'rgba(251,191,36,0.1)',  border:'#fbbf24' },
+    { text:'#4ade80', bg:'rgba(74,222,128,0.1)',  border:'#4ade80' },
+  ];
+  let colorIdx = 0;
+
+  function applyMotivationColor(el, box) {
+    const col = MOTIVATION_COLORS[colorIdx % MOTIVATION_COLORS.length];
+    if (el)  { el.style.color = col.text; }
+    if (box) { box.style.background = col.bg; box.style.borderColor = col.border; }
+  }
+
   function startMotivationRotation() {
-    const el = document.getElementById('tradeMotivationMsg');
+    const el  = document.getElementById('tradeMotivationMsg');
+    const box = document.getElementById('motivationBox');
     if (!el) return;
-    motivationIdx = 0;
+    motivationIdx = 0; colorIdx = 0;
     el.style.opacity = '1';
     const _ms = getMotivations();
     el.textContent = '"' + _ms[0] + '"';
+    applyMotivationColor(el, box);
     if (motivationInterval) clearInterval(motivationInterval);
     motivationInterval = setInterval(() => {
-      const el = document.getElementById('tradeMotivationMsg');
+      const el  = document.getElementById('tradeMotivationMsg');
+      const box = document.getElementById('motivationBox');
       if (!el) { clearInterval(motivationInterval); return; }
       el.style.opacity = '0';
       setTimeout(() => {
         const _ml = getMotivations();
         motivationIdx = (motivationIdx + 1) % _ml.length;
+        colorIdx = (colorIdx + 1) % MOTIVATION_COLORS.length;
         el.textContent = '"' + _ml[motivationIdx] + '"';
+        applyMotivationColor(el, box);
         el.style.opacity = '1';
       }, 400);
     }, 5000);
