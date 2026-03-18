@@ -3104,7 +3104,6 @@
     const saveBtn = document.getElementById('saveEmotionBtn');
     if (saveBtn) { saveBtn.textContent = 'Save'; delete saveBtn.dataset.editId; }
   };
-  };
 
   window.selectEmotion = function(el) {
     document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
