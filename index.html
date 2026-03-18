@@ -332,7 +332,12 @@
       -webkit-appearance: none;
     }
     .form-control:focus { border-color: var(--accent); }
-    select.form-control { cursor: pointer; }
+    select.form-control {
+      cursor: pointer;
+      -webkit-appearance: menulist;
+      appearance: menulist;
+      padding-right: 12px;
+    }
 
     .time-row {
       display: grid;
@@ -946,9 +951,10 @@
       background: rgba(0,0,0,0.75);
       z-index: 300;
       display: none;
-      align-items: center;
+      align-items: flex-start;
       justify-content: center;
       padding: 24px;
+      overflow-y: auto;
     }
     .leave-modal-overlay.open { display: flex; }
     .leave-modal {
@@ -958,6 +964,7 @@
       padding: 28px 24px 24px;
       width: 100%;
       max-width: 300px;
+      margin: auto;
       animation: cardPop 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards;
     }
     .leave-modal-title {
@@ -1134,9 +1141,26 @@
     </div>
 
     <!-- History -->
-    <div class="card" style="margin-bottom:80px">
+    <div class="card" style="margin-bottom:16px">
       <div class="card-title" style="margin-bottom:12px">📅 History</div>
       <div id="emotionHistory"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- Motivations Manager -->
+    <div class="card" style="margin-bottom:80px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="card-title" style="margin-bottom:0">💬 Motivations</div>
+        <button id="addMotivationBtn" style="background:rgba(124,92,252,0.15);border:1px solid rgba(124,92,252,0.35);border-radius:8px;color:#7c5cfc;font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:var(--font-head)">+ Add</button>
+      </div>
+      <!-- Add form (hidden by default) -->
+      <div id="addMotivationForm" style="display:none;margin-bottom:12px">
+        <textarea id="newMotivationInput" class="form-control" rows="2" placeholder="Enter your motivation message…" style="margin-bottom:8px;resize:none"></textarea>
+        <div style="display:flex;gap:8px">
+          <button id="saveMotivationBtn" style="flex:1;padding:8px;background:#7c5cfc;border:none;border-radius:8px;color:#fff;font-family:var(--font-head);font-size:11px;font-weight:700;cursor:pointer">Save</button>
+          <button id="cancelMotivationBtn" style="flex:1;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-head);font-size:11px;cursor:pointer">Cancel</button>
+        </div>
+      </div>
+      <div id="motivationsList"></div>
     </div>
 
   </div>
@@ -1156,39 +1180,72 @@
     <label class="form-label">Date</label>
     <input class="form-control" type="date" id="eDate" style="margin-bottom:12px">
 
-    <!-- Time field — only for Live Trade -->
-    <div id="eTimeRow" style="display:none;margin-bottom:12px">
-      <label class="form-label">Time</label>
-      <input class="form-control" type="time" id="eTime">
-    </div>
 
     <!-- Live Trade Checklist -->
     <div id="liveChecklist" style="display:none;background:rgba(255,107,53,0.07);border:1px solid rgba(255,107,53,0.25);border-radius:10px;padding:12px;margin-bottom:14px">
-      <div style="font-size:10px;font-weight:700;color:var(--accent2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.8px">Pre-Trade Checklist</div>
+      <div style="font-size:10px;font-weight:700;color:var(--accent2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.8px">Trade Management Checklist</div>
       <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer">
-        <input type="checkbox" id="chkValues" onchange="updateChecklist()">
+        <input type="checkbox" id="chkValues" >
         <span style="font-size:11px;color:var(--text)">Values Verified</span>
       </label>
       <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer">
-        <input type="checkbox" id="chkLayout" onchange="updateChecklist()">
+        <input type="checkbox" id="chkLayout" >
         <span style="font-size:11px;color:var(--text)">Switch Layout</span>
       </label>
       <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer">
-        <input type="checkbox" id="chkAlert" onchange="updateChecklist()">
+        <input type="checkbox" id="chkAlert" >
         <span style="font-size:11px;color:var(--text)">Deactivate Alert / Collapse Watchlist</span>
       </label>
-      <!-- Control message — shown when all checked -->
       <div id="tradeControlMsg" style="display:none;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.3);border-radius:8px;padding:10px;text-align:center;font-size:11px;font-weight:600;color:var(--accent);line-height:1.5">
         ✅ Your trade is in control<br>Just relax and monitor every 15 mins
+      </div>
+      <!-- Motivational message -->
+      <div style="margin-top:10px;padding:10px;background:rgba(124,92,252,0.08);border-left:3px solid #7c5cfc;border-radius:0 8px 8px 0">
+        <div id="tradeMotivationMsg" style="font-size:10px;color:#7c5cfc;font-style:italic;line-height:1.6;font-family:var(--font-mono);transition:opacity 0.4s ease">"This trade is one of a thousand trades — the average of the series gives you success"</div>
+      </div>
+
+      <!-- Relaxation Reminders -->
+      <div style="margin-top:10px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px">
+        <div style="font-size:9px;font-weight:700;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">🧘 Relax Reminders</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text)">
+            <span style="font-size:13px">🫁</span> Do box breathing — 5 mins
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text)">
+            <span style="font-size:13px">☀️</span> Stand in sunlight
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text)">
+            <span style="font-size:13px">🚶</span> Walk away from charts — wait for candle close
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text)">
+            <span style="font-size:13px">📋</span> Follow the plan and trail SL — do not tighten it
+          </div>
+        </div>
       </div>
     </div>
 
     <label class="form-label">Emotion</label>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="emotionChips"></div>
-    <input class="form-control" type="text" id="eCustom" placeholder="Describe your emotion…" style="display:none;margin-bottom:12px">
+    <!-- Post Session: chips -->
+    <div id="emotionChipsWrap" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px" id="emotionChips"></div>
+    </div>
+    <input type="text" id="eCustom" style="display:none">
+    <!-- Live Trade: dropdown -->
+    <div id="emotionDropWrap" style="display:none;margin-bottom:12px">
+      <select class="form-control" id="eEmotionDrop" style="width:100%;cursor:pointer;-webkit-appearance:menulist;appearance:menulist">
+        <option value="">— Select emotion —</option>
+        <option value="Calm / Trusting">😌 Calm / Trusting</option>
+        <option value="Anxious / Fearful">😰 Anxious / Fearful</option>
+        <option value="Impatient">😤 Impatient</option>
+        <option value="Greedy">🤑 Greedy</option>
+        <option value="FOMO">😬 FOMO</option>
+        <option value="Urge to Exit Early">🚪 Urge to Exit Early</option>
+        <option value="Detached / Neutral">🧘 Detached / Neutral</option>
+      </select>
+    </div>
 
     <label class="form-label">Notes / Journal</label>
-    <textarea class="form-control" id="eNotes" rows="3" placeholder="What were you feeling and why?…" style="margin-bottom:14px;resize:vertical"></textarea>
+    <textarea class="form-control" id="eNotes" rows="2" placeholder="What were you feeling and why?…" style="margin-bottom:14px;resize:vertical"></textarea>
 
     <button class="btn btn-primary" id="saveEmotionBtn" style="width:100%;margin-bottom:8px">Save</button>
     <button class="btn" id="cancelEmotionBtn" style="width:100%;background:var(--bg3);color:var(--muted)">Cancel</button>
@@ -2739,52 +2796,50 @@
     }
   };
 
-  window.scrollToEmotionForm = function() {
-    const overlay = document.getElementById('emotionModalOverlay');
-    if (overlay) overlay.style.display = 'flex';
-    const eDateEl = document.getElementById('eDate');
-    if (eDateEl) eDateEl.value = localISO(new Date());
+  let selectedPhase   = 'post';
+  let selectedEmotion = null;
 
-    // Set phase to match current view toggle
-    selectedPhase = activeEmotionView;
-
-    // Update phase toggle buttons in modal
-    document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
-    const activeBtn = document.getElementById(selectedPhase === 'live' ? 'phaseLiveBtn' : 'phasePostBtn');
-    if (activeBtn) activeBtn.classList.add('active');
-
-    // Show/hide time row
-    const timeRow = document.getElementById('eTimeRow');
-    if (timeRow) timeRow.style.display = selectedPhase === 'live' ? 'block' : 'none';
-    if (selectedPhase === 'live') {
-      const now = new Date();
-      document.getElementById('eTime').value =
-        String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-    }
-
-    // Update modal title
+  function applyPhaseUI(phase) {
+    selectedPhase = phase;
+    // Title
     const title = document.getElementById('emotionModalTitle');
-    if (title) title.textContent = selectedPhase === 'live' ? 'Live Trade' : 'Post Session';
-
-    // Show/hide checklist
+    if (title) title.textContent = phase === 'live' ? 'Live Trade' : 'Post Session';
+    // Phase buttons
+    document.querySelectorAll('.phase-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.phase === phase);
+    });
+    // Checklist
     const cl = document.getElementById('liveChecklist');
-    if (cl) cl.style.display = selectedPhase === 'live' ? 'block' : 'none';
-    // Reset checklist
+    if (cl) cl.style.display = phase === 'live' ? 'block' : 'none';
+    if (phase === 'live') startMotivationRotation(); else stopMotivationRotation();
     ['chkValues','chkLayout','chkAlert'].forEach(id => {
       const el = document.getElementById(id); if (el) el.checked = false;
     });
     const msg = document.getElementById('tradeControlMsg');
     if (msg) msg.style.display = 'none';
+    // Chips vs dropdown
+    const chipsWrap = document.getElementById('emotionChipsWrap');
+    const dropWrap  = document.getElementById('emotionDropWrap');
+    if (chipsWrap) chipsWrap.style.display = phase === 'live' ? 'none' : 'flex';
+    if (dropWrap)  dropWrap.style.display  = phase === 'live' ? 'block' : 'none';
+    const dd = document.getElementById('eEmotionDrop');
+    if (dd) dd.value = '';
     selectedEmotion = null;
     renderEmotionChips();
+  }
+
+  window.scrollToEmotionForm = function() {
+    const overlay = document.getElementById('emotionModalOverlay');
+    if (overlay) overlay.style.display = 'flex';
+    const eDateEl = document.getElementById('eDate');
+    if (eDateEl) eDateEl.value = localISO(new Date());
+    applyPhaseUI(activeEmotionView);
   };
 
 
 
   /* ── Emotions ────────────────────────────────── */
   let emotions = [];
-  let selectedPhase   = 'post';
-  let selectedEmotion = null;
 
   const PHASE_LABELS = { post:'Post Session', live:'Live Trade' };
   const DEFAULT_EMOTIONS = {
@@ -2883,6 +2938,124 @@
 
   // Set today's date default for emotion form (done when modal opens)
 
+  // ── Motivations — Firestore + localStorage ──────────────────────────────
+  let customMotivations = null; // null = not loaded yet, [] = loaded but empty
+
+  const DEFAULT_MOTIVATIONS = [
+    "This trade is one of a thousand trades — the average of the series gives you success",
+    "You don't need this trade to win — you need your process to be consistent",
+    "Patience is your edge. The market rewards those who wait for candle close",
+    "One loss changes nothing. One thousand trades define your edge",
+    "Your job is to follow the plan — the market's job is to deliver results",
+    "Breathe. The trade is placed. Now trust the setup",
+    "Discipline today builds the trader you want to be tomorrow",
+    "The best traders are the most boring ones — same process, every time",
+    "React to what the market shows you, not what you fear it might do",
+    "A tight SL out of fear is the costliest mistake — trust your original plan",
+  ];
+
+  function getMotivations() {
+    return (customMotivations && customMotivations.length) ? customMotivations : DEFAULT_MOTIVATIONS;
+  }
+
+  async function loadMotivations() {
+    const cached = JSON.parse(localStorage.getItem('tt_motivations') || 'null');
+    if (cached) { customMotivations = cached; renderMotivationsList(); }
+    if (!db) return;
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'motivations'));
+      if (snap.exists()) {
+        customMotivations = snap.data().list || [];
+        localStorage.setItem('tt_motivations', JSON.stringify(customMotivations));
+        renderMotivationsList();
+      }
+    } catch(e) { console.warn('loadMotivations', e); }
+  }
+
+  async function saveMotivations() {
+    localStorage.setItem('tt_motivations', JSON.stringify(customMotivations));
+    if (db) {
+      try { await setDoc(doc(db, 'settings', 'motivations'), { list: customMotivations }); }
+      catch(e) { console.warn('saveMotivations', e); }
+    }
+  }
+
+  function renderMotivationsList() {
+    const el = document.getElementById('motivationsList');
+    if (!el) return;
+    const list = getMotivations();
+    const isCustom = customMotivations && customMotivations.length > 0;
+    el.innerHTML = list.map((m, i) => `
+      <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;font-size:11px;color:var(--text);font-style:italic;line-height:1.5">"${m}"</div>
+        <button data-del-motivation="${i}" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:6px;color:#ef4444;font-size:10px;padding:3px 7px;cursor:pointer;flex-shrink:0">✕</button>
+      </div>`).join('') +
+      (!isCustom ? `<div style="font-size:9px;color:var(--muted);margin-top:8px;text-align:center">Showing defaults — add your own to override</div>` : '');
+  }
+
+  window.deleteMotivation = async function(idx) {
+    const list = [...getMotivations()];
+    list.splice(idx, 1);
+    customMotivations = list;
+    await saveMotivations();
+    renderMotivationsList();
+  };
+
+  window.addMotivation = async function() {
+    const input = document.getElementById('newMotivationInput');
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) { showToast('Please enter a message'); return; }
+    const list = [...getMotivations()];
+    list.push(val);
+    customMotivations = list;
+    await saveMotivations();
+    input.value = '';
+    document.getElementById('addMotivationForm').style.display = 'none';
+    renderMotivationsList();
+    showToast('Motivation added ✓');
+  };
+
+  const TRADE_MOTIVATIONS = [
+    "This trade is one of a thousand trades — the average of the series gives you success",
+    "You don't need this trade to win — you need your process to be consistent",
+    "Patience is your edge. The market rewards those who wait for candle close",
+    "One loss changes nothing. One thousand trades define your edge",
+    "Your job is to follow the plan — the market's job is to deliver results",
+    "Breathe. The trade is placed. Now trust the setup",
+    "Discipline today builds the trader you want to be tomorrow",
+    "The best traders are the most boring ones — same process, every time",
+    "React to what the market shows you, not what you fear it might do",
+    "A tight SL out of fear is the costliest mistake — trust your original plan",
+  ];
+  let motivationInterval = null;
+  let motivationIdx = 0;
+
+  function startMotivationRotation() {
+    const el = document.getElementById('tradeMotivationMsg');
+    if (!el) return;
+    motivationIdx = 0;
+    el.style.opacity = '1';
+    const _ms = getMotivations();
+    el.textContent = '"' + _ms[0] + '"';
+    if (motivationInterval) clearInterval(motivationInterval);
+    motivationInterval = setInterval(() => {
+      const el = document.getElementById('tradeMotivationMsg');
+      if (!el) { clearInterval(motivationInterval); return; }
+      el.style.opacity = '0';
+      setTimeout(() => {
+        const _ml = getMotivations();
+        motivationIdx = (motivationIdx + 1) % _ml.length;
+        el.textContent = '"' + _ml[motivationIdx] + '"';
+        el.style.opacity = '1';
+      }, 400);
+    }, 5000);
+  }
+
+  function stopMotivationRotation() {
+    if (motivationInterval) { clearInterval(motivationInterval); motivationInterval = null; }
+  }
+
   window.updateChecklist = function() {
     const allChecked = ['chkValues','chkLayout','chkAlert'].every(id => {
       const el = document.getElementById(id); return el && el.checked;
@@ -2895,8 +3068,7 @@
     const overlay = document.getElementById('emotionModalOverlay');
     if (overlay) overlay.style.display = 'none';
     document.getElementById('eNotes').value = '';
-    document.getElementById('eCustom').value = '';
-    document.getElementById('eCustom').style.display = 'none';
+    const _ec = document.getElementById('eCustom'); if(_ec){_ec.value='';_ec.style.display='none';}
     document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
     ['chkValues','chkLayout','chkAlert'].forEach(id => {
       const el = document.getElementById(id); if (el) el.checked = false;
@@ -2907,25 +3079,24 @@
     if (cl) cl.style.display = 'none';
     selectedEmotion = null;
     selectedPhase = 'post';
+    stopMotivationRotation();
   };
 
   window.selectEmotion = function(el) {
     document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
     el.classList.add('active');
     selectedEmotion = el.dataset.val;
-    const customEl = document.getElementById('eCustom');
-    if (customEl) {
-      customEl.style.display = selectedEmotion === '__custom__' ? 'block' : 'none';
-      if (selectedEmotion !== '__custom__') customEl.value = '';
-    }
+    const customEl = document.getElementById('eCustom'); if(customEl){customEl.style.display='none';customEl.value='';}
   };
 
   window.saveEmotion = async function() {
     const date      = document.getElementById('eDate').value;
     const notes     = document.getElementById('eNotes').value.trim();
     const customVal = document.getElementById('eCustom').value.trim();
-    const emotion   = selectedEmotion === '__custom__' ? (customVal||null) : selectedEmotion;
-    const timeVal   = selectedPhase === 'live' ? (document.getElementById('eTime').value || '') : '';
+    const emotion   = selectedPhase === 'live'
+      ? (document.getElementById('eEmotionDrop')?.value || null)
+      : (selectedEmotion === '__custom__' ? (customVal||null) : selectedEmotion);
+    const timeVal   = '';
 
     if (!date)    { showToast('Please select a date'); return; }
     if (!emotion) { showToast('Please select an emotion'); return; }
@@ -2969,6 +3140,7 @@
 
   function loadEmotions() {
     loadCustomEmotions();
+    loadMotivations();
     if (!db) {
       emotionsLoaded = true;
       emotions = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
@@ -3023,6 +3195,7 @@
   function renderEmotions() {
     renderEmotionStats();
     renderEmotionHistory();
+    renderMotivationsList();
   }
 
   function renderEmotionStats() {
@@ -3131,8 +3304,8 @@
                     </div>` : ''}
                   </div>
                   <div style="display:flex;flex-direction:column;gap:4px;margin-left:8px;flex-shrink:0">
-                    <button onclick="openEmotionEdit('${e.id}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer">✏️ Edit</button>
-                    <button onclick="confirmDeleteEmotion('${e.id}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;font-size:10px;padding:3px 8px;cursor:pointer">🗑 Delete</button>
+                    <button data-edit-emotion="${e.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:10px;padding:3px 8px;cursor:pointer">✏️ Edit</button>
+                    <button data-delete-emotion="${e.id}" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;font-size:10px;padding:3px 8px;cursor:pointer">🗑 Delete</button>
                   </div>
                 </div>
               </div>`;
@@ -3191,8 +3364,9 @@
     // Render chips dynamically (same as main form) and bind via JS
     const container = document.getElementById('emotionEditChips');
     const saved = getSavedEmotions();
+    const allDefaults = [...(DEFAULT_EMOTIONS.post||[]), ...(DEFAULT_EMOTIONS.live||[])];
     const allChips = [
-      ...DEFAULT_EMOTIONS,
+      ...allDefaults,
       ...saved.map(v => ({ val:v, label:'💭 '+v, custom:true })),
       { val:'__custom__', label:'✏️ Custom' }
     ];
@@ -3205,7 +3379,7 @@
     });
 
     // Handle custom emotion not in known list
-    const KNOWN = DEFAULT_EMOTIONS.map(e=>e.val);
+    const KNOWN = allDefaults.map(e=>e.val);
     const isCustom = !KNOWN.includes(entry.emotion);
     const customInput = document.getElementById('eEditCustom');
     if (isCustom) {
@@ -3293,6 +3467,47 @@
   document.getElementById('saveEmotionBtn').addEventListener('click', function() { window.saveEmotion(); });
   document.getElementById('cancelEmotionBtn').addEventListener('click', function() { window.closeEmotionModal(); });
   document.getElementById('emotionModalOverlay').addEventListener('click', function(e) { if (e.target === this) window.closeEmotionModal(); });
+
+  // Bind + Add motivation button
+  const addMotBtn = document.getElementById('addMotivationBtn');
+  if (addMotBtn) addMotBtn.addEventListener('click', function() {
+    const form = document.getElementById('addMotivationForm');
+    if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  });
+
+  // Bind motivation save button
+  const saveMotBtn = document.getElementById('saveMotivationBtn');
+  if (saveMotBtn) saveMotBtn.addEventListener('click', function() { window.addMotivation(); });
+
+  const cancelMotBtn = document.getElementById('cancelMotivationBtn');
+  if (cancelMotBtn) cancelMotBtn.addEventListener('click', function() {
+    document.getElementById('addMotivationForm').style.display = 'none';
+  });
+
+  // Event delegation for motivation delete
+  document.getElementById('motivationsList').addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-del-motivation]');
+    if (btn) window.deleteMotivation(parseInt(btn.dataset.delMotivation));
+  });
+
+  // Event delegation for emotion history edit/delete buttons
+  document.getElementById('emotionHistory').addEventListener('click', function(e) {
+    const editBtn = e.target.closest('[data-edit-emotion]');
+    const delBtn  = e.target.closest('[data-delete-emotion]');
+    if (editBtn) window.openEmotionEdit(editBtn.dataset.editEmotion);
+    if (delBtn)  window.confirmDeleteEmotion(delBtn.dataset.deleteEmotion);
+  });
+
+  // Bind checklist checkboxes
+  ['chkValues','chkLayout','chkAlert'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', () => window.updateChecklist());
+  });
+
+  // Phase toggle buttons — inside module so selectedPhase and renderEmotionChips are accessible
+  document.querySelectorAll('.phase-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { applyPhaseUI(btn.dataset.phase); });
+  });
 </script>
 
 <!-- ─── Emotion Edit Modal ──────────────────────── -->
@@ -3327,41 +3542,6 @@
     if (c) c.addEventListener('click', function() { window.closeEmotionEdit(); });
     var fab = document.getElementById('fabEmotionBtn');
     if (fab) fab.addEventListener('click', function() { window.scrollToEmotionForm(); });
-
-    // Phase toggle buttons
-    document.querySelectorAll('.phase-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        document.querySelectorAll('.phase-btn').forEach(function(b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        selectedPhase = btn.dataset.phase;
-        // Update modal title
-        var title = document.getElementById('emotionModalTitle');
-        if (title) title.textContent = selectedPhase === 'live' ? 'Live Trade' : 'Post Session';
-        // Show/hide time row
-        var timeRow = document.getElementById('eTimeRow');
-        if (timeRow) timeRow.style.display = selectedPhase === 'live' ? 'block' : 'none';
-        // Set time to now if live
-        if (selectedPhase === 'live') {
-          var now = new Date();
-          var hh = String(now.getHours()).padStart(2,'0');
-          var mm = String(now.getMinutes()).padStart(2,'0');
-          document.getElementById('eTime').value = hh + ':' + mm;
-        }
-        // Show/hide checklist
-        var cl = document.getElementById('liveChecklist');
-        if (cl) cl.style.display = selectedPhase === 'live' ? 'block' : 'none';
-        if (selectedPhase !== 'live') {
-          ['chkValues','chkLayout','chkAlert'].forEach(function(id) {
-            var el = document.getElementById(id); if (el) el.checked = false;
-          });
-          var msg = document.getElementById('tradeControlMsg');
-          if (msg) msg.style.display = 'none';
-        }
-        // Reset chip selection and re-render for new phase
-        selectedEmotion = null;
-        renderEmotionChips();
-      });
-    });
   });
 </script>
 </html>
