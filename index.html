@@ -3101,6 +3101,9 @@
     selectedEmotion = null;
     selectedPhase = 'post';
     stopMotivationRotation();
+    const saveBtn = document.getElementById('saveEmotionBtn');
+    if (saveBtn) { saveBtn.textContent = 'Save'; delete saveBtn.dataset.editId; }
+  };
   };
 
   window.selectEmotion = function(el) {
@@ -3127,35 +3130,55 @@
       switchLayout:   document.getElementById('chkLayout')?.checked || false,
       deactivateAlert:document.getElementById('chkAlert')?.checked  || false,
     } : null;
-    const entry = { date, phase: selectedPhase, emotion, notes, ts: Date.now(),
-      ...(timeVal && { time: timeVal }),
+
+    // Check if we're in edit mode
+    const saveBtn = document.getElementById('saveEmotionBtn');
+    const editId  = saveBtn?.dataset.editId || null;
+
+    const payload = { date, phase: selectedPhase, emotion, notes,
       ...(checklist && { checklist }) };
 
-    // Persist custom emotion for future use
-    const knownEmos = [...(DEFAULT_EMOTIONS.post||[]), ...(DEFAULT_EMOTIONS.live||[])].map(e=>e.val);
-    if (!knownEmos.includes(emotion)) {
-      await saveCustomEmotion(emotion);
-      renderEmotionChips();
-    }
-
     try {
-      if (db) {
-        await addDoc(collection(db, 'emotions'), entry);
+      if (editId) {
+        // Update existing entry
+        if (db) {
+          await updateDoc(doc(db, 'emotions', editId), payload);
+        } else {
+          const idx = emotions.findIndex(e => e.id === editId);
+          if (idx > -1) emotions[idx] = { ...emotions[idx], ...payload };
+          localStorage.setItem('tt_emotions', JSON.stringify(emotions));
+          renderEmotions();
+        }
+        delete saveBtn.dataset.editId;
+        saveBtn.textContent = 'Save';
+        showToast('Updated ✓');
       } else {
-        const stored = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
-        stored.push({ ...entry, id:'local_'+Date.now() });
-        localStorage.setItem('tt_emotions', JSON.stringify(stored));
-        emotions = stored;
-        renderEmotions();
+        // New entry
+        const entry = { ...payload, ts: Date.now() };
+        const knownEmos = [...(DEFAULT_EMOTIONS.post||[]), ...(DEFAULT_EMOTIONS.live||[])].map(e=>e.val);
+        if (!knownEmos.includes(emotion)) {
+          await saveCustomEmotion(emotion);
+          renderEmotionChips();
+        }
+        if (db) {
+          await addDoc(collection(db, 'emotions'), entry);
+        } else {
+          const stored = JSON.parse(localStorage.getItem('tt_emotions')||'[]');
+          stored.push({ ...entry, id:'local_'+Date.now() });
+          localStorage.setItem('tt_emotions', JSON.stringify(stored));
+          emotions = stored;
+          renderEmotions();
+        }
+        showToast('Emotion saved ✓');
       }
-      // Reset
+      // Reset and close
       document.getElementById('eNotes').value = '';
-      document.getElementById('eCustom').value = '';
-      document.getElementById('eCustom').style.display = 'none';
+      const _ec = document.getElementById('eCustom'); if(_ec){_ec.value='';_ec.style.display='none';}
       document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
       selectedEmotion = null;
-      closeEmotionModal();
-      showToast('Emotion saved ✓');
+      selectedPhase = 'post';
+      stopMotivationRotation();
+      document.getElementById('emotionModalOverlay').style.display = 'none';
     } catch(e) { console.error('saveEmotion',e); showToast('Save failed'); }
   };
 
@@ -3377,43 +3400,48 @@
     const entry = emotions.find(e => e.id === id);
     if (!entry) return;
     editingEmotionId  = id;
-    editingEmotionVal = entry.emotion;
 
-    document.getElementById('eEditDate').value  = entry.date || '';
-    document.getElementById('eEditNotes').value = entry.notes || '';
+    // Open main modal with correct phase
+    const overlay = document.getElementById('emotionModalOverlay');
+    if (overlay) overlay.style.display = 'flex';
 
-    // Render chips dynamically (same as main form) and bind via JS
-    const container = document.getElementById('emotionEditChips');
-    const saved = getSavedEmotions();
-    const allDefaults = [...(DEFAULT_EMOTIONS.post||[]), ...(DEFAULT_EMOTIONS.live||[])];
-    const allChips = [
-      ...allDefaults,
-      ...saved.map(v => ({ val:v, label:'💭 '+v, custom:true })),
-      { val:'__custom__', label:'✏️ Custom' }
-    ];
-    container.innerHTML = allChips.map(e =>
-      `<button class="emotion-chip" data-val="${e.val}">${e.label}</button>`
-    ).join('');
-    container.querySelectorAll('.emotion-chip').forEach(btn => {
-      if (btn.dataset.val === entry.emotion) btn.classList.add('active');
-      btn.addEventListener('click', function() { window.selectEditEmotion(this); });
-    });
+    // Set date
+    const eDateEl = document.getElementById('eDate');
+    if (eDateEl) eDateEl.value = entry.date || '';
 
-    // Handle custom emotion not in known list
-    const KNOWN = allDefaults.map(e=>e.val);
-    const isCustom = !KNOWN.includes(entry.emotion);
-    const customInput = document.getElementById('eEditCustom');
-    if (isCustom) {
-      customInput.style.display = 'block';
-      customInput.value = entry.emotion;
-      const customChip = container.querySelector('[data-val="__custom__"]');
-      if (customChip) customChip.classList.add('active');
-    } else {
-      customInput.style.display = 'none';
-      customInput.value = '';
+    // Apply phase UI
+    applyPhaseUI(entry.phase || 'post');
+
+    // Pre-fill checklist for live entries
+    if (entry.phase === 'live' && entry.checklist) {
+      const el1 = document.getElementById('chkValues');
+      const el2 = document.getElementById('chkLayout');
+      const el3 = document.getElementById('chkAlert');
+      if (el1) el1.checked = entry.checklist.valuesVerified || false;
+      if (el2) el2.checked = entry.checklist.switchLayout   || false;
+      if (el3) el3.checked = entry.checklist.deactivateAlert|| false;
+      window.updateChecklist();
     }
 
-    document.getElementById('emotionEditModal').style.display = 'flex';
+    // Pre-select emotion
+    if (entry.phase === 'live') {
+      const dd = document.getElementById('eEmotionDrop');
+      if (dd) dd.value = entry.emotion || '';
+    } else {
+      // Highlight correct chip
+      document.querySelectorAll('#emotionChips .emotion-chip').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.val === entry.emotion);
+      });
+      selectedEmotion = entry.emotion;
+    }
+
+    // Pre-fill notes
+    document.getElementById('eNotes').value = entry.notes || '';
+
+    // Change save button to update mode
+    const saveBtn = document.getElementById('saveEmotionBtn');
+    if (saveBtn) saveBtn.textContent = 'Update';
+    saveBtn.dataset.editId = id;
   };
 
   window.selectEditEmotion = function(el) {
