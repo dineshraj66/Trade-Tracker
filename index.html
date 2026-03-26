@@ -1191,7 +1191,7 @@
 
       <!-- Week Projection -->
       <div style="margin-bottom:80px">
-        <div style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:0.5px">📆 Week Projection 2026–2027</div>
+        <div id="weekProjTitle" style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:0.5px"></div>
         <div id="homeWeekProjection"></div>
       </div>
 
@@ -2053,31 +2053,31 @@
   function renderHomeWeekProjection() {
     const el = document.getElementById('homeWeekProjection');
     if (!el) return;
+    const titleEl = document.getElementById('weekProjTitle');
+    if (titleEl) titleEl.textContent = '📆 Week Projection ' + new Date().getFullYear();
 
-    const allNSE = new Set([
-      ...NSE_HOLIDAYS_2026.map(h=>h.date),
-      ...NSE_HOLIDAYS_2027.map(h=>h.date),
-    ]);
+    const curYr = new Date().getFullYear();
+    const nseArr = curYr === 2027 ? NSE_HOLIDAYS_2027 : NSE_HOLIDAYS_2026;
+    const allNSE = new Set(nseArr.map(h=>h.date));
 
-    let d = new Date('2026-01-01T00:00:00');
+    // Find first Monday of current year
+    let d = new Date(`${curYr}-01-01T00:00:00`);
     while (d.getDay() !== 1) d.setDate(d.getDate()+1);
-    const end = new Date('2027-12-31T00:00:00');
+    const end = new Date(`${curYr}-12-31T00:00:00`);
 
     const weeks = [];
-    let wNum = 1, curYear = 2026;
+    let wNum = 1;
     const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
     while (d <= end) {
       const ws = new Date(d), we = new Date(d); we.setDate(d.getDate()+4);
-      const yr = ws.getFullYear();
-      if (yr > curYear) { curYear = yr; wNum = 1; }
       let td = 0;
       for (let i=0; i<5; i++) {
         const day = new Date(d); day.setDate(d.getDate()+i);
         if (!allNSE.has(localISO(day))) td++;
       }
       const mo = ws.getMonth();
-      weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]} ${yr}`, td,
+      weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]}`, td,
         start: localISO(ws).slice(5), end: localISO(we).slice(5) });
       wNum++; d.setDate(d.getDate()+7);
     }
