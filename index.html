@@ -2060,6 +2060,9 @@
     const nseArr = curYr === 2027 ? NSE_HOLIDAYS_2027 : NSE_HOLIDAYS_2026;
     const allNSE = new Set(nseArr.map(h=>h.date));
 
+    const todayISO = localISO(new Date());
+    const leaveSet = new Set((Array.isArray(leaves)?leaves:[]).map(l=>String(l.date).trim()));
+
     // Find first Monday of current year
     let d = new Date(`${curYr}-01-01T00:00:00`);
     while (d.getDay() !== 1) d.setDate(d.getDate()+1);
@@ -2072,14 +2075,31 @@
     while (d <= end) {
       const ws = new Date(d), we = new Date(d); we.setDate(d.getDate()+4);
       let td = 0;
+      let interrupted = false;
       for (let i=0; i<5; i++) {
         const day = new Date(d); day.setDate(d.getDate()+i);
-        if (!allNSE.has(localISO(day))) td++;
+        const iso = localISO(day);
+        const isHoliday = allNSE.has(iso);
+        const isLeave   = leaveSet.has(iso);
+        if (!isHoliday && !isLeave) td++;
+        // Interrupt = holiday or leave on Tue/Wed/Thu (not Mon=0 or Fri=4)
+        if ((isHoliday || isLeave) && i > 0 && i < 4) interrupted = true;
       }
       const mo = ws.getMonth();
-      weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]}`, td,
-        start: localISO(ws).slice(5), end: localISO(we).slice(5) });
+      const wsISO = localISO(ws), weISO = localISO(we);
+      const isCurrent = todayISO >= wsISO && todayISO <= weISO;
+      const isFuture  = wsISO > todayISO;
+      weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]}`, td, interrupted,
+        start: wsISO.slice(5), end: weISO.slice(5), isCurrent,
+        isUpcoming: isFuture && weeks.every(w => !w.isCurrent) });
       wNum++; d.setDate(d.getDate()+7);
+    }
+
+    // Mark first upcoming week if no current week found
+    const hasCurrent = weeks.some(w => w.isCurrent);
+    if (!hasCurrent) {
+      const first = weeks.find(w => w.start > todayISO.slice(5));
+      if (first) first.isUpcoming = true;
     }
 
     const groups = {5:0,4:0,3:0,2:0,1:0,0:0};
@@ -2091,12 +2111,29 @@
     })).filter(g=>g.cnt>0).sort((a,b)=>b.cnt-a.cnt);
 
     const tdColor = d => GCOL[d]||'#4a5a78';
-    const tableRows = weeks.map(w=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:9px;color:var(--muted);font-family:var(--font-mono);min-width:100px">${w.label}</span>
-        <span style="font-family:var(--font-head);font-size:16px;font-weight:800;color:${tdColor(w.td)}">${w.td}</span>
-        <span style="font-size:9px;color:var(--muted)">${w.start}→${w.end}</span>
-      </div>`).join('');
+    const tableRows = weeks.map((w, idx) => {
+      const highlight = w.isCurrent
+        ? 'background:rgba(0,229,176,0.1);border-left:3px solid var(--accent);padding-left:8px;border-radius:4px;'
+        : w.isUpcoming
+          ? 'background:rgba(124,92,252,0.08);border-left:3px solid #7c5cfc;padding-left:8px;border-radius:4px;'
+          : '';
+      const rowId = w.isCurrent ? 'currentWeekRow' : w.isUpcoming ? 'upcomingWeekRow' : '';
+      const badge = w.isCurrent ? '<span style="font-size:8px;background:var(--accent);color:#000;border-radius:4px;padding:1px 4px;font-weight:700;margin-left:4px">NOW</span>'
+                  : w.isUpcoming ? '<span style="font-size:8px;background:#7c5cfc;color:#fff;border-radius:4px;padding:1px 4px;font-weight:700;margin-left:4px">NEXT</span>'
+                  : '';
+      const interruptSymbol = w.interrupted
+        ? '<span title="Mid-week holiday/leave" style="font-size:11px;margin-left:4px">⚡</span>'
+        : '';
+      return `
+        <div id="${rowId}" style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);${highlight}">
+          <span style="font-size:9px;color:${w.isCurrent?'var(--accent)':w.isUpcoming?'#7c5cfc':'var(--muted)'};font-family:var(--font-mono);min-width:90px;font-weight:${w.isCurrent||w.isUpcoming?'700':'400'}">${w.label}${badge}</span>
+          <span style="display:flex;align-items:center">
+            <span style="font-family:var(--font-head);font-size:16px;font-weight:800;color:${tdColor(w.td)}">${w.td}</span>
+            ${interruptSymbol}
+          </span>
+          <span style="font-size:9px;color:var(--muted)">${w.start}→${w.end}</span>
+        </div>`;
+    }).join('');
 
     const breakdown = sorted.map(g=>`
       <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
@@ -2120,15 +2157,28 @@
       <div id="weekListRows" style="display:none;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0 10px">${tableRows}</div>
     `;
 
-    // Bind toggle
+    // Bind toggle — auto-open if current/upcoming week exists
     const toggleBtn = document.getElementById('weekListToggleBtn');
-    if (toggleBtn) toggleBtn.addEventListener('click', function() {
+    const hasFocus  = weeks.some(w => w.isCurrent || w.isUpcoming);
+    if (toggleBtn) {
+      // Auto-open
       const rows  = document.getElementById('weekListRows');
       const arrow = document.getElementById('weekListArrow');
-      const open  = rows.style.display !== 'none';
-      rows.style.display  = open ? 'none' : 'block';
-      if (arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-    });
+      if (hasFocus && rows) { rows.style.display = 'block'; if(arrow) arrow.style.transform = 'rotate(180deg)'; }
+      toggleBtn.addEventListener('click', function() {
+        const rows  = document.getElementById('weekListRows');
+        const arrow = document.getElementById('weekListArrow');
+        const open  = rows.style.display !== 'none';
+        rows.style.display  = open ? 'none' : 'block';
+        if (arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
+      });
+    }
+
+    // Scroll to current or upcoming week
+    setTimeout(() => {
+      const focusRow = document.getElementById('currentWeekRow') || document.getElementById('upcomingWeekRow');
+      if (focusRow) focusRow.scrollIntoView({ behavior:'smooth', block:'center' });
+    }, 200);
 
     // Chart
     const ex = Chart.getChart(cid); if(ex) ex.destroy();
