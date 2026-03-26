@@ -146,74 +146,6 @@
     .fab:active { transform: scale(0.94); }
     .fab-hidden { display: none !important; }
 
-
-    /* ─── 2026 Calendar ──────────────────────────────── */
-    .cal-month { margin-bottom:18px; }
-    .cal-month-title {
-      font-family: var(--font-head);
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--accent);
-      margin-bottom: 6px;
-      letter-spacing: 0.5px;
-    }
-    .cal-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 2px;
-    }
-    .cal-day-header {
-      text-align: center;
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--muted);
-      padding: 3px 0;
-      font-family: var(--font-head);
-    }
-    .cal-day-header.weekend { color: #ff6b35; }
-    .cal-cell {
-      position: relative;
-      text-align: center;
-      padding: 5px 2px 4px;
-      border-radius: 6px;
-      font-size: 10px;
-      font-family: var(--font-mono);
-      color: var(--text);
-      min-height: 34px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 2px;
-    }
-    .cal-cell.weekend {
-      background: rgba(255,107,53,0.12);
-      color: #ff6b35;
-      font-weight: 700;
-    }
-    .cal-cell.nse-holiday { background: rgba(124,92,252,0.12); }
-    .cal-cell.personal-leave { background: rgba(251,191,36,0.12); }
-    .cal-cell.today-cell {
-      border: 1px solid var(--accent);
-      background: rgba(0,229,176,0.1);
-    }
-    .cal-cell.empty { background: none; }
-    .cal-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      display: inline-block;
-      flex-shrink: 0;
-    }
-    .cal-legend {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-      font-size: 9px;
-      color: var(--muted);
-      align-items: center;
-    }
-    .cal-legend-item { display:flex; align-items:center; gap:4px; }
     /* ─── Level group header ──────────────────────── */
     .level-group-header {
       display: flex;
@@ -1161,40 +1093,13 @@
     <div class="holiday-list-section">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div class="holiday-list-title" style="margin-bottom:0">Non-Trading Days 2026</div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="calendarToggleBtn" style="background:rgba(0,229,176,0.12);border:1px solid rgba(0,229,176,0.3);border-radius:8px;color:var(--accent);font-size:16px;padding:4px 10px;cursor:pointer" title="View Calendar">📅</button>
-          <button onclick="openLeaveModal()" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);border-radius:8px;color:var(--warn);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:var(--font-head)">+ Add</button>
-        </div>
+        <button onclick="openLeaveModal()" style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.35);border-radius:8px;color:var(--warn);font-size:10px;font-weight:700;padding:5px 12px;cursor:pointer;font-family:var(--font-head)">+ Add Holiday / Event</button>
       </div>
 
       <!-- Trading day summary cards -->
       <div id="tradingDaySummary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px"></div>
 
-      <!-- Sliding Calendar -->
-      <div id="calendarView" style="display:none;margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <button id="calPrevBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:4px 12px;cursor:pointer">‹</button>
-          <div id="calMonthTitle" style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent)"></div>
-          <button id="calNextBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:4px 12px;cursor:pointer">›</button>
-        </div>
-        <div id="calMonthView"></div>
-      </div>
-
-      <!-- Leave list — collapsible -->
-      <div style="margin-bottom:10px">
-        <button id="leaveListToggleBtn" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--text)">
-          <span>📋 Leave / Holiday List</span>
-          <span id="leaveListArrow" style="font-size:14px;transition:transform 0.2s">▾</span>
-        </button>
-        <div id="holidayList" style="display:none;margin-top:6px"></div>
-      </div>
-
-      <!-- Week Projection -->
-      <div style="margin-bottom:80px">
-        <div style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:0.5px">📆 Week Projection 2026–2027</div>
-        <div id="homeWeekProjection"></div>
-      </div>
-
+      <div id="holidayList"></div>
     </div>
   </div>
 </div>
@@ -1218,90 +1123,15 @@
   <div style="padding:16px">
 
     <!-- Phase Toggle -->
-    <div style="display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:16px;gap:2px">
-      <button id="viewSetupBtn" onclick="setEmotionView('setup')"
-        style="flex:1;padding:7px 4px;border:none;border-radius:9px;font-family:var(--font-head);font-size:10px;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--muted)">
-        🔍 Setup
+    <div style="display:flex;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:16px">
+      <button id="viewPostBtn" onclick="setEmotionView('post')"
+        style="flex:1;padding:8px;border:none;border-radius:9px;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;background:#7c5cfc;color:#fff">
+        📋 Post Session
       </button>
       <button id="viewLiveBtn" onclick="setEmotionView('live')"
-        style="flex:1;padding:7px 4px;border:none;border-radius:9px;font-family:var(--font-head);font-size:10px;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--muted)">
-        ⚡ Live
+        style="flex:1;padding:8px;border:none;border-radius:9px;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;background:transparent;color:var(--muted)">
+        ⚡ Live Trade
       </button>
-      <button id="viewPostBtn" onclick="setEmotionView('post')"
-        style="flex:1;padding:7px 4px;border:none;border-radius:9px;font-family:var(--font-head);font-size:10px;font-weight:700;cursor:pointer;transition:all 0.2s;background:#7c5cfc;color:#fff">
-        📋 Post
-      </button>
-    </div>
-
-    <!-- Setup Analysis Panel (shown when setup view active) -->
-    <div id="setupAnalysisPanel" style="display:none">
-
-      <!-- Motivation Slider -->
-      <div id="setupMotivationBox" style="margin-bottom:16px;padding:12px;border-left:3px solid #00e5b0;border-radius:0 10px 10px 0;background:rgba(0,229,176,0.07);transition:background 0.8s,border-color 0.8s">
-        <div id="setupMotivationMsg" style="font-size:11px;font-weight:600;font-style:italic;color:#00e5b0;line-height:1.6;font-family:var(--font-mono);transition:opacity 0.4s,color 0.8s">"This trade is one of a thousand trades — the average of the series gives you success"</div>
-      </div>
-
-      <!-- Pre-Session Checklist -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:14px">✅ Pre-Session Checklist</div>
-        <div id="setupChecklist" style="display:flex;flex-direction:column;gap:10px">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc1" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Move index with ideal setup</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc2" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Label stock and do calculation</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc3" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Set timer and move away</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc4" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Check for confirmation</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc5" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Else move away and repeat</span>
-          </label>
-        </div>
-        <!-- All checked message -->
-        <div id="setupAllDoneMsg" style="display:none;margin-top:12px;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.3);border-radius:8px;padding:10px;text-align:center;font-size:11px;font-weight:600;color:var(--accent);line-height:1.5">
-          ✅ Setup complete — Now wait patiently for your edge!
-        </div>
-      </div>
-
-      <!-- Relax & Patience Reminders -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:12px">🧘 Relax & Patience</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">🫁</span><span>Do box breathing</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">☀️</span><span>Get some sunlight</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">📵</span><span>Do not watch movie or social media</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">🤫</span><span>Do not call or chat with others</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">👁</span><span>Edge may appear in same or different form — stay focused</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">🏠</span><span>Do not involve in household work</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Close Button -->
-      <div style="text-align:center;margin-bottom:80px">
-        <button id="closeSetupBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:var(--font-head);font-size:12px;font-weight:700;padding:10px 32px;cursor:pointer">✕ Close</button>
-      </div>
-
     </div>
 
     <!-- Stats -->
@@ -1973,187 +1803,6 @@
   // Build Set after array is defined
   const HOLIDAY_SET = new Set(NSE_HOLIDAYS_2026.map(h => h.date));
 
-
-  // ── Sliding Calendar ─────────────────────────────────────────────────
-  let calendarVisible = false;
-  let calCurrentMonth = 0; // 0-based month index in combined 2026-2027 range (0=Jan2026 .. 23=Dec2027)
-
-  function renderSlideCalendar() {
-    const el  = document.getElementById('calMonthView');
-    const ttl = document.getElementById('calMonthTitle');
-    if (!el || !ttl) return;
-    const nseSet   = new Set([...NSE_HOLIDAYS_2026, ...NSE_HOLIDAYS_2027].map(h => h.date));
-    const nseNames = {};
-    [...NSE_HOLIDAYS_2026, ...NSE_HOLIDAYS_2027].forEach(h => { nseNames[h.date] = h.name; });
-    const leaveSet  = new Set((Array.isArray(leaves)?leaves:[]).map(l=>String(l.date).trim()));
-    const leaveNames = {};
-    (Array.isArray(leaves)?leaves:[]).forEach(l=>{leaveNames[String(l.date).trim()]=l.comment||l.type||'Leave';});
-    const todayISO = localISO(new Date());
-    const MONTHS   = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const DAY_HDRS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-
-    const yr = 2026 + Math.floor(calCurrentMonth / 12);
-    const mo = calCurrentMonth % 12;
-    ttl.textContent = MONTHS[mo] + ' ' + yr;
-
-    const daysInMonth = new Date(yr, mo+1, 0).getDate();
-    let startCol = new Date(yr, mo, 1).getDay();
-    startCol = startCol === 0 ? 6 : startCol - 1;
-
-    let html = '<div class="cal-grid">';
-    DAY_HDRS.forEach((d,i) => { html += `<div class="cal-day-header${i>=5?' weekend':''}">${d}</div>`; });
-    for (let e=0; e<startCol; e++) html += '<div class="cal-cell empty"></div>';
-    for (let day=1; day<=daysInMonth; day++) {
-      const iso  = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      const dt   = new Date(yr, mo, day);
-      const dow  = dt.getDay();
-      const isWE = dow===0||dow===6;
-      const isNSE   = nseSet.has(iso);
-      const isLeave = leaveSet.has(iso);
-      const isToday = iso===todayISO;
-      let cls = 'cal-cell';
-      if (isWE) cls+=' weekend';
-      else if (isNSE)   cls+=' nse-holiday';
-      else if (isLeave) cls+=' personal-leave';
-      if (isToday) cls+=' today-cell';
-      let dot = '';
-      const tip = isNSE ? (nseNames[iso]||'NSE Holiday') : isLeave ? (leaveNames[iso]||'Leave') : '';
-      if (!isWE && isNSE)   dot = `<span class="cal-dot" style="background:#7c5cfc"></span>`;
-      if (!isWE && isLeave) dot = `<span class="cal-dot" style="background:#fbbf24"></span>`;
-      html += `<div class="${cls}" title="${tip}">${day}${dot?'<br>'+dot:''}</div>`;
-    }
-    html += '</div>';
-    // Legend
-    html += `<div class="cal-legend" style="margin-top:8px">
-      <div class="cal-legend-item"><span class="cal-dot" style="background:#7c5cfc"></span> NSE Holiday</div>
-      <div class="cal-legend-item"><span class="cal-dot" style="background:#fbbf24"></span> Personal Leave</div>
-      <div class="cal-legend-item"><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(255,107,53,0.2)"></span> Weekend</div>
-    </div>`;
-    el.innerHTML = html;
-  }
-
-  window.toggleCalendar = function() {
-    const el  = document.getElementById('calendarView');
-    const btn = document.getElementById('calendarToggleBtn');
-    calendarVisible = !calendarVisible;
-    el.style.display = calendarVisible ? 'block' : 'none';
-    if (btn) btn.style.background = calendarVisible ? 'rgba(0,229,176,0.25)' : 'rgba(0,229,176,0.12)';
-    if (calendarVisible) {
-      // Default to current month
-      const now = new Date();
-      calCurrentMonth = (now.getFullYear()-2026)*12 + now.getMonth();
-      calCurrentMonth = Math.max(0, Math.min(23, calCurrentMonth));
-      renderSlideCalendar();
-    }
-  };
-
-
-
-
-  function renderHomeWeekProjection() {
-    const el = document.getElementById('homeWeekProjection');
-    if (!el) return;
-
-    const allNSE = new Set([
-      ...NSE_HOLIDAYS_2026.map(h=>h.date),
-      ...NSE_HOLIDAYS_2027.map(h=>h.date),
-    ]);
-
-    let d = new Date('2026-01-01T00:00:00');
-    while (d.getDay() !== 1) d.setDate(d.getDate()+1);
-    const end = new Date('2027-12-31T00:00:00');
-
-    const weeks = [];
-    let wNum = 1, curYear = 2026;
-    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-    while (d <= end) {
-      const ws = new Date(d), we = new Date(d); we.setDate(d.getDate()+4);
-      const yr = ws.getFullYear();
-      if (yr > curYear) { curYear = yr; wNum = 1; }
-      let td = 0;
-      for (let i=0; i<5; i++) {
-        const day = new Date(d); day.setDate(d.getDate()+i);
-        if (!allNSE.has(localISO(day))) td++;
-      }
-      const mo = ws.getMonth();
-      weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]} ${yr}`, td,
-        start: localISO(ws).slice(5), end: localISO(we).slice(5) });
-      wNum++; d.setDate(d.getDate()+7);
-    }
-
-    const groups = {5:0,4:0,3:0,2:0,1:0,0:0};
-    weeks.forEach(w => { if(groups[w.td]!==undefined) groups[w.td]++; });
-    const total = weeks.length;
-    const GCOL  = {5:'#00e5b0',4:'#7c5cfc',3:'#fbbf24',2:'#ff6b35',1:'#ef4444',0:'#4a5a78'};
-    const sorted = Object.entries(groups).map(([d,cnt])=>({
-      d:Number(d), cnt, pct:Math.round(cnt/total*100), col:GCOL[Number(d)]
-    })).filter(g=>g.cnt>0).sort((a,b)=>b.cnt-a.cnt);
-
-    const tdColor = d => GCOL[d]||'#4a5a78';
-    const tableRows = weeks.map(w=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:9px;color:var(--muted);font-family:var(--font-mono);min-width:100px">${w.label}</span>
-        <span style="font-family:var(--font-head);font-size:16px;font-weight:800;color:${tdColor(w.td)}">${w.td}</span>
-        <span style="font-size:9px;color:var(--muted)">${w.start}→${w.end}</span>
-      </div>`).join('');
-
-    const breakdown = sorted.map(g=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
-        <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text);font-weight:600">
-          <span style="width:8px;height:8px;border-radius:50%;background:${g.col};display:inline-block"></span>
-          ${g.d}-day weeks
-        </span>
-        <span style="display:flex;align-items:baseline;gap:4px">
-          <span style="font-family:var(--font-head);font-size:16px;font-weight:800;color:${g.col}">${g.pct}%</span>
-          <span style="font-size:10px;color:var(--muted)">(${g.cnt})</span>
-        </span>
-      </div>`).join('');
-
-    const cid = 'chartHomeWeekProj';
-    el.innerHTML = `
-      <div class="chart-box" style="margin-bottom:8px"><canvas id="${cid}" height="130"></canvas></div>
-      <div style="margin-bottom:12px">${breakdown}</div>
-      <button id="weekListToggleBtn" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:8px 14px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--text);margin-bottom:6px">
-        <span>📋 All Weeks</span><span id="weekListArrow" style="font-size:14px">▾</span>
-      </button>
-      <div id="weekListRows" style="display:none;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0 10px">${tableRows}</div>
-    `;
-
-    // Bind toggle
-    const toggleBtn = document.getElementById('weekListToggleBtn');
-    if (toggleBtn) toggleBtn.addEventListener('click', function() {
-      const rows  = document.getElementById('weekListRows');
-      const arrow = document.getElementById('weekListArrow');
-      const open  = rows.style.display !== 'none';
-      rows.style.display  = open ? 'none' : 'block';
-      if (arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-    });
-
-    // Chart
-    const ex = Chart.getChart(cid); if(ex) ex.destroy();
-    const wpPl = { id:'hwpDL', afterDatasetsDraw(chart) {
-      const ctx=chart.ctx;
-      chart.data.datasets.forEach((ds,i)=>{
-        chart.getDatasetMeta(i).data.forEach((bar,idx)=>{
-          const v=ds.data[idx]; if(!v) return;
-          ctx.save(); ctx.fillStyle='#e8edf5'; ctx.font='bold 9px Space Mono,monospace';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText(v+'%',bar.x,bar.y-2); ctx.restore();
-        });
-      });
-    }};
-    new Chart(document.getElementById(cid),{
-      type:'bar',
-      data:{ labels:sorted.map(g=>g.d+' days'),
-             datasets:[{data:sorted.map(g=>g.pct),backgroundColor:sorted.map(g=>g.col),borderRadius:6}]},
-      options:{ plugins:{legend:{display:false}},
-        scales:{ x:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'#1e2d45'}},
-                 y:{ticks:{color:'#6b7a99',font:{size:9},callback:v=>v+'%'},grid:{color:'#1e2d45'},beginAtZero:true,max:100}}},
-      plugins:[wpPl]
-    });
-  }
-
   function renderHolidays() {
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -2265,8 +1914,6 @@
     }
 
     // Full unified list
-    renderHomeWeekProjection();
-    if (calendarVisible) renderSlideCalendar();
     const listEl = document.getElementById('holidayList');
     if (!listEl) return;
     listEl.innerHTML = allItems.map(h => {
@@ -2385,7 +2032,6 @@
           localStorage.setItem('tt_leaves', JSON.stringify(leaves));
           renderTrades();
           renderHolidays();
-          if (calendarVisible) renderCalendar();
         });
         return;
       } catch(e) { console.warn('loadLeaves error', e); }
@@ -2583,157 +2229,6 @@
     if (mins >= 11*60+15 && mins <= 12*60)    return '11:15AM–12:00PM';
     if (mins >= 12*60+15 && mins <= 13*60)    return '12:15PM–1:00PM';
     return 'Other';
-  }
-
-
-  // ── Week Projection 2026–2027 ─────────────────────────────────────────
-  // 2027 NSE holidays — update when official list is published
-  const NSE_HOLIDAYS_2027 = [
-    { date:'2027-01-26', name:'Republic Day' },
-    { date:'2027-02-19', name:'Chhatrapati Shivaji Maharaj Jayanti' },
-    { date:'2027-03-22', name:'Holi' },
-    { date:'2027-03-31', name:'Id-Ul-Fitr (Ramadan Eid)' },
-    { date:'2027-04-02', name:'Good Friday' },
-    { date:'2027-04-14', name:'Dr. Baba Saheb Ambedkar Jayanti' },
-    { date:'2027-04-30', name:'Id-Ul-Zuha (Bakri Eid)' },
-    { date:'2027-05-03', name:'Maharashtra Day' },
-    { date:'2027-06-28', name:'Rath Yatra' },
-    { date:'2027-08-15', name:'Independence Day' },
-    { date:'2027-08-16', name:'Parsi New Year' },
-    { date:'2027-09-02', name:'Ganesh Chaturthi' },
-    { date:'2027-10-02', name:'Mahatma Gandhi Jayanti / Dussehra' },
-    { date:'2027-10-20', name:'Diwali (Laxmi Pujan)' },
-    { date:'2027-10-21', name:'Diwali (Balipratipada)' },
-    { date:'2027-11-05', name:'Prakash Gurpurb Sri Guru Nanak Dev' },
-    { date:'2027-12-25', name:'Christmas' },
-  ];
-
-  function renderWeekProjection() {
-    const el = document.getElementById('weekProjectionSection');
-    if (!el) return;
-
-    const allNSE = new Set([
-      ...NSE_HOLIDAYS_2026.map(h => h.date),
-      ...NSE_HOLIDAYS_2027.map(h => h.date),
-    ]);
-
-    // Build all weeks from Jan 2026 to Dec 2027
-    // Week starts on Monday
-    const start = new Date('2026-01-05T00:00:00'); // First Monday on or after Jan 1 2026
-    // Find first Monday of 2026
-    let d = new Date('2026-01-01T00:00:00');
-    while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
-    const end = new Date('2027-12-31T00:00:00');
-
-    const weeks = [];
-    let cur = new Date(d);
-    let wNum = 1;
-    let curYear = 2026;
-
-    while (cur <= end) {
-      const weekStart = new Date(cur);
-      const weekEnd   = new Date(cur); weekEnd.setDate(cur.getDate() + 4); // Friday
-
-      // Count trading days (Mon-Fri, skip NSE holidays only — not personal leaves)
-      let tradingDays = 0;
-      for (let i = 0; i < 5; i++) {
-        const day = new Date(cur); day.setDate(cur.getDate() + i);
-        const iso = localISO(day);
-        if (!allNSE.has(iso)) tradingDays++;
-      }
-
-      // Week label
-      const mo  = weekStart.getMonth();
-      const yr  = weekStart.getFullYear();
-      if (yr > curYear) { curYear = yr; wNum = 1; }
-      const MN  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      const label = `W${String(wNum).padStart(2,'0')} ${MN[mo]} ${yr}`;
-
-      weeks.push({ label, tradingDays, weekStart: localISO(weekStart), weekEnd: localISO(weekEnd), yr });
-      wNum++;
-      cur.setDate(cur.getDate() + 7);
-    }
-
-    // Group by trading days count
-    const groups = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
-    weeks.forEach(w => { if (groups[w.tradingDays] !== undefined) groups[w.tradingDays]++; });
-    const total = weeks.length;
-
-    // Bar chart data — group label & colour
-    const groupLabels = ['5 Days', '4 Days', '3 Days', '2 Days', '1 Day', '0 Days'];
-    const groupCounts = [groups[5], groups[4], groups[3], groups[2], groups[1], groups[0]];
-    const groupColors = ['#00e5b0','#7c5cfc','#fbbf24','#ff6b35','#ef4444','#4a5a78'];
-    const groupPcts   = groupCounts.map(v => Math.round(v / total * 100));
-
-    // Sort high to low by count
-    const sorted = groupLabels.map((l, i) => ({
-      label: l, count: groupCounts[i], pct: groupPcts[i], color: groupColors[i]
-    })).filter(g => g.count > 0).sort((a, b) => b.count - a.count);
-
-    // Week table rows — 4 cols per row (compact)
-    const tdColor = d => d === 5 ? '#00e5b0' : d === 4 ? '#7c5cfc' : d === 3 ? '#fbbf24' : d === 2 ? '#ff6b35' : '#ef4444';
-
-    const tableRows = weeks.map(w => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:10px;color:var(--muted);font-family:var(--font-mono);width:110px">${w.label}</span>
-        <span style="font-family:var(--font-head);font-size:16px;font-weight:800;color:${tdColor(w.tradingDays)}">${w.tradingDays}</span>
-        <span style="font-size:9px;color:var(--muted)">${w.weekStart.slice(5)} → ${w.weekEnd.slice(5)}</span>
-      </div>`).join('');
-
-    // Breakdown list
-    const breakdown = sorted.map(g => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-        <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text);font-weight:600">
-          <span style="width:8px;height:8px;border-radius:50%;background:${g.color};display:inline-block"></span>
-          ${g.label} weeks
-        </span>
-        <span style="display:flex;align-items:baseline;gap:5px">
-          <span style="font-family:var(--font-head);font-size:18px;font-weight:800;color:${g.color}">${g.pct}%</span>
-          <span style="font-size:10px;color:var(--muted)">(${g.count})</span>
-        </span>
-      </div>`).join('');
-
-    const canvasId = 'chartWeekProj';
-
-    el.innerHTML = `
-      <div class="chart-box" style="margin-bottom:8px"><canvas id="${canvasId}" height="140"></canvas></div>
-      <div style="margin-bottom:16px">${breakdown}</div>
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">All Weeks</div>
-      <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0 10px">${tableRows}</div>
-    `;
-
-    // Render bar chart
-    const existing = Chart.getChart(canvasId);
-    if (existing) existing.destroy();
-
-    const wpPlugin = { id:'wpDL', afterDatasetsDraw(chart) {
-      const ctx = chart.ctx;
-      chart.data.datasets.forEach((ds,i) => {
-        chart.getDatasetMeta(i).data.forEach((bar,idx) => {
-          const v = ds.data[idx]; if (!v) return;
-          ctx.save(); ctx.fillStyle='#e8edf5'; ctx.font='bold 9px Space Mono,monospace';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText(v+'%', bar.x, bar.y-2); ctx.restore();
-        });
-      });
-    }};
-
-    new Chart(document.getElementById(canvasId), {
-      type: 'bar',
-      data: {
-        labels: sorted.map(g => g.label),
-        datasets: [{ data: sorted.map(g => g.pct), backgroundColor: sorted.map(g => g.color), borderRadius: 6 }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color:'#6b7a99', font:{size:9} }, grid: { color:'#1e2d45' } },
-          y: { ticks: { color:'#6b7a99', font:{size:9}, callback: v => v+'%' }, grid: { color:'#1e2d45' }, beginAtZero:true, max:100 }
-        },
-        responsive: true
-      },
-      plugins: [wpPlugin]
-    });
   }
 
   window.renderStats = function() {
@@ -2954,12 +2449,6 @@
       <div class="stats-section">
         <div class="stats-section-title">Exit by Trade Sequence</div>
         <div id="exitSequenceTable" style="margin-top:6px"></div>
-      </div>
-
-      <!-- 14. Week Projection -->
-      <div class="stats-section">
-        <div class="stats-section-title">Week Projection 2026–2027</div>
-        <div id="weekProjectionSection"></div>
       </div>
 
       <div style="height:20px"></div>`;
@@ -3305,9 +2794,6 @@
     } else {
       document.getElementById('waitBox').innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:11px">Need 2+ trade dates for gap analysis</div>';
     }
-
-    // Week Projection
-    renderWeekProjection();
   };
 
   let selectedPhase   = 'post';
@@ -3618,6 +3104,7 @@
     const saveBtn = document.getElementById('saveEmotionBtn');
     if (saveBtn) { saveBtn.textContent = 'Save'; delete saveBtn.dataset.editId; }
   };
+  };
 
   window.selectEmotion = function(el) {
     document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
@@ -3729,99 +3216,24 @@
     }
   }
 
-  // ── Setup Analysis Motivation Rotation ──────────────────
-  let setupMotInterval = null;
-  let setupMotIdx = 0;
-  let setupColorIdx = 0;
-
-  function startSetupMotivation() {
-    const el  = document.getElementById('setupMotivationMsg');
-    const box = document.getElementById('setupMotivationBox');
-    if (!el) return;
-    setupMotIdx = 0; setupColorIdx = 0;
-    el.style.opacity = '1';
-    const ms = getMotivations();
-    el.textContent = '"' + ms[0] + '"';
-    applySetupColor(el, box);
-    if (setupMotInterval) clearInterval(setupMotInterval);
-    setupMotInterval = setInterval(() => {
-      const el  = document.getElementById('setupMotivationMsg');
-      const box = document.getElementById('setupMotivationBox');
-      if (!el) { clearInterval(setupMotInterval); return; }
-      el.style.opacity = '0';
-      setTimeout(() => {
-        const ml = getMotivations();
-        setupMotIdx   = (setupMotIdx   + 1) % ml.length;
-        setupColorIdx = (setupColorIdx + 1) % MOTIVATION_COLORS.length;
-        el.textContent = '"' + ml[setupMotIdx] + '"';
-        applySetupColor(el, box);
-        el.style.opacity = '1';
-      }, 400);
-    }, 5000);
-  }
-
-  function applySetupColor(el, box) {
-    const col = MOTIVATION_COLORS[setupColorIdx % MOTIVATION_COLORS.length];
-    if (el)  el.style.color = col.text;
-    if (box) { box.style.background = col.bg; box.style.borderColor = col.border; }
-  }
-
-  function stopSetupMotivation() {
-    if (setupMotInterval) { clearInterval(setupMotInterval); setupMotInterval = null; }
-  }
-
-  // Setup checklist logic
-  function bindSetupChecklist() {
-    document.querySelectorAll('.setup-chk').forEach(chk => {
-      chk.addEventListener('change', function() {
-        const all = [...document.querySelectorAll('.setup-chk')].every(c => c.checked);
-        const msg = document.getElementById('setupAllDoneMsg');
-        if (msg) msg.style.display = all ? 'block' : 'none';
-      });
-    });
-    const closeBtn = document.getElementById('closeSetupBtn');
-    if (closeBtn) closeBtn.addEventListener('click', function() {
-      setEmotionView('post');
-      // Reset checkboxes
-      document.querySelectorAll('.setup-chk').forEach(c => c.checked = false);
-      const msg = document.getElementById('setupAllDoneMsg');
-      if (msg) msg.style.display = 'none';
-    });
-  }
-
   window.setEmotionView = function(view) {
     activeEmotionView = view;
-    // Update all toggle button styles
-    const postBtn  = document.getElementById('viewPostBtn');
-    const liveBtn  = document.getElementById('viewLiveBtn');
-    const setupBtn = document.getElementById('viewSetupBtn');
-    const btns = { post: postBtn, live: liveBtn, setup: setupBtn };
-    const colors = { post: '#7c5cfc', live: '#ff6b35', setup: '#00e5b0' };
-    Object.entries(btns).forEach(([k, btn]) => {
-      if (!btn) return;
-      if (k === view) { btn.style.background = colors[k]; btn.style.color = k === 'setup' ? '#000' : '#fff'; }
-      else { btn.style.background = 'transparent'; btn.style.color = 'var(--muted)'; }
-    });
-    // Show/hide setup panel vs emotion sections
-    const setupPanel   = document.getElementById('setupAnalysisPanel');
-    const statsCard    = document.querySelector('#page-emotions .card');
-    const emotionCards = document.querySelectorAll('#page-emotions > div > .card');
-    if (setupPanel) setupPanel.style.display = view === 'setup' ? 'block' : 'none';
-    emotionCards.forEach(el => {
-      if (el.contains(document.getElementById('emotionStats')) ||
-          el.contains(document.getElementById('emotionHistory')) ||
-          el.contains(document.getElementById('motivationsList'))) {
-        el.style.display = view === 'setup' ? 'none' : '';
+    // Update toggle button styles
+    const postBtn = document.getElementById('viewPostBtn');
+    const liveBtn = document.getElementById('viewLiveBtn');
+    if (postBtn && liveBtn) {
+      if (view === 'post') {
+        postBtn.style.background = '#7c5cfc'; postBtn.style.color = '#fff';
+        liveBtn.style.background = 'transparent'; liveBtn.style.color = 'var(--muted)';
+      } else {
+        liveBtn.style.background = '#ff6b35'; liveBtn.style.color = '#fff';
+        postBtn.style.background = 'transparent'; postBtn.style.color = 'var(--muted)';
       }
-    });
-    if (view === 'setup') {
-      startSetupMotivation();
-    } else {
-      stopSetupMotivation();
-      const ec = Chart.getChart('chartEmotions');
-      if (ec) ec.destroy();
-      renderEmotions();
     }
+    // Destroy chart so it redraws cleanly
+    const ec = Chart.getChart('chartEmotions');
+    if (ec) ec.destroy();
+    renderEmotions();
   };
 
   function renderEmotions() {
@@ -4134,35 +3546,6 @@
     if (editBtn) window.openEmotionEdit(editBtn.dataset.editEmotion);
     if (delBtn)  window.confirmDeleteEmotion(delBtn.dataset.deleteEmotion);
   });
-
-  // Bind calendar toggle button
-  const calBtn = document.getElementById('calendarToggleBtn');
-  if (calBtn) calBtn.addEventListener('click', function() { window.toggleCalendar(); });
-
-  // Calendar prev/next
-  const calPrev = document.getElementById('calPrevBtn');
-  const calNext = document.getElementById('calNextBtn');
-  if (calPrev) calPrev.addEventListener('click', function() {
-    calCurrentMonth = Math.max(0, calCurrentMonth - 1);
-    renderSlideCalendar();
-  });
-  if (calNext) calNext.addEventListener('click', function() {
-    calCurrentMonth = Math.min(23, calCurrentMonth + 1);
-    renderSlideCalendar();
-  });
-
-  // Leave list collapsible toggle
-  const leaveToggleBtn = document.getElementById('leaveListToggleBtn');
-  if (leaveToggleBtn) leaveToggleBtn.addEventListener('click', function() {
-    const list  = document.getElementById('holidayList');
-    const arrow = document.getElementById('leaveListArrow');
-    const open  = list.style.display !== 'none';
-    list.style.display  = open ? 'none' : 'block';
-    if (arrow) arrow.style.transform = open ? 'rotate(0deg)' : 'rotate(180deg)';
-  });
-
-  // Bind setup analysis checklist
-  bindSetupChecklist();
 
   // Bind checklist checkboxes
   ['chkValues','chkLayout','chkAlert'].forEach(id => {
