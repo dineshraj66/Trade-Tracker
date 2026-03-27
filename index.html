@@ -2075,21 +2075,22 @@
     while (d <= end) {
       const ws = new Date(d), we = new Date(d); we.setDate(d.getDate()+4);
       let td = 0;
-      let interrupted = false;
+      const interruptDays = [];
+      const DAY_SHORT = ['Mon','Tue','Wed','Thu','Fri'];
       for (let i=0; i<5; i++) {
         const day = new Date(d); day.setDate(d.getDate()+i);
         const iso = localISO(day);
         const isHoliday = allNSE.has(iso);
         const isLeave   = leaveSet.has(iso);
         if (!isHoliday && !isLeave) td++;
-        // Interrupt = holiday or leave on Tue/Wed/Thu (not Mon=0 or Fri=4)
-        if ((isHoliday || isLeave) && i > 0 && i < 4) interrupted = true;
+        else interruptDays.push(DAY_SHORT[i]);
       }
       const mo = ws.getMonth();
       const wsISO = localISO(ws), weISO = localISO(we);
       const isCurrent = todayISO >= wsISO && todayISO <= weISO;
       const isFuture  = wsISO > todayISO;
-      weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]}`, td, interrupted,
+      weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]}`, td,
+        interrupted: interruptDays.length > 0, interruptDays,
         start: wsISO.slice(5), end: weISO.slice(5), isCurrent,
         isUpcoming: isFuture && weeks.every(w => !w.isCurrent) });
       wNum++; d.setDate(d.getDate()+7);
@@ -2122,7 +2123,7 @@
                   : w.isUpcoming ? '<span style="font-size:8px;background:#7c5cfc;color:#fff;border-radius:4px;padding:1px 4px;font-weight:700;margin-left:4px">NEXT</span>'
                   : '';
       const interruptSymbol = w.interrupted
-        ? '<span title="Mid-week holiday/leave" style="font-size:11px;margin-left:4px">⚡</span>'
+        ? `<span style="font-size:9px;color:#fbbf24;margin-left:5px;font-family:var(--font-mono);font-weight:700">⚡${w.interruptDays.join(',')}</span>`
         : '';
       return `
         <div id="${rowId}" style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);${highlight}">
@@ -2174,11 +2175,13 @@
       });
     }
 
-    // Scroll to current or upcoming week
-    setTimeout(() => {
-      const focusRow = document.getElementById('currentWeekRow') || document.getElementById('upcomingWeekRow');
-      if (focusRow) focusRow.scrollIntoView({ behavior:'smooth', block:'center' });
-    }, 200);
+    // Scroll current/upcoming week into view within the list container only
+    const focusRow = document.getElementById('currentWeekRow') || document.getElementById('upcomingWeekRow');
+    const rowsContainer = document.getElementById('weekListRows');
+    if (focusRow && rowsContainer) {
+      const rowTop = focusRow.offsetTop - rowsContainer.offsetTop;
+      rowsContainer.scrollTop = rowTop - 20;
+    }
 
     // Chart
     const ex = Chart.getChart(cid); if(ex) ex.destroy();
