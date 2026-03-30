@@ -1190,9 +1190,15 @@
       </div>
 
       <!-- Week Projection -->
-      <div style="margin-bottom:80px">
+      <div style="margin-bottom:16px">
         <div id="weekProjTitle" style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:0.5px"></div>
         <div id="homeWeekProjection"></div>
+      </div>
+
+      <!-- Monthly Trading Days Chart -->
+      <div style="margin-bottom:80px">
+        <div id="monthlyChartTitle" style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:0.5px"></div>
+        <div class="chart-box"><canvas id="chartMonthlyTradingDays" height="140"></canvas></div>
       </div>
 
     </div>
@@ -2232,6 +2238,69 @@
     });
   }
 
+
+  function renderMonthlyTradingDays() {
+    const canvas  = document.getElementById('chartMonthlyTradingDays');
+    if (!canvas) return;
+    const titleEl = document.getElementById('monthlyChartTitle');
+    const yr      = new Date().getFullYear();
+    if (titleEl) titleEl.textContent = '📊 Trading Days by Month ' + yr;
+
+    const nseArr   = yr === 2027 ? NSE_HOLIDAYS_2027 : NSE_HOLIDAYS_2026;
+    const nseSet   = new Set(nseArr.map(h => h.date));
+    const leaveSet = new Set((Array.isArray(leaves)?leaves:[]).map(l => String(l.date).trim()));
+    const MN       = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    const data = MN.map((lbl, mo) => {
+      const days = new Date(yr, mo+1, 0).getDate();
+      let count = 0;
+      for (let d = 1; d <= days; d++) {
+        const dt  = new Date(yr, mo, d);
+        const iso = yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+        if (dt.getDay()===0||dt.getDay()===6) continue;
+        if (nseSet.has(iso)||leaveSet.has(iso)) continue;
+        count++;
+      }
+      return count;
+    });
+
+    const ex = Chart.getChart('chartMonthlyTradingDays');
+    if (ex) ex.destroy();
+
+    const mtdPl = { id:'mtdDL', afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      chart.data.datasets.forEach((ds,i) => {
+        chart.getDatasetMeta(i).data.forEach((bar,idx) => {
+          const v = ds.data[idx]; if (!v) return;
+          ctx.save(); ctx.fillStyle='#e8edf5'; ctx.font='bold 9px Space Mono,monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-2); ctx.restore();
+        });
+      });
+    }};
+
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: MN,
+        datasets:[{ data, borderRadius:5,
+          backgroundColor: data.map(v =>
+            v >= 22 ? '#00e5b0' : v >= 20 ? '#7c5cfc' : v >= 18 ? '#fbbf24' : '#ff6b35'
+          )
+        }]
+      },
+      options: {
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{color:'#6b7a99',font:{size:9}}, grid:{color:'#1e2d45'} },
+          y:{ ticks:{color:'#6b7a99',font:{size:9}}, grid:{color:'#1e2d45'}, beginAtZero:true }
+        },
+        responsive:true
+      },
+      plugins:[mtdPl]
+    });
+  }
+
   function renderHolidays() {
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -2344,6 +2413,7 @@
 
     // Full unified list
     renderHomeWeekProjection();
+    renderMonthlyTradingDays();
     if (calendarVisible) renderSlideCalendar();
     const listEl = document.getElementById('holidayList');
     if (!listEl) return;
@@ -3034,12 +3104,6 @@
         <div id="exitSequenceTable" style="margin-top:6px"></div>
       </div>
 
-      <!-- 14. Week Projection -->
-      <div class="stats-section">
-        <div class="stats-section-title">Week Projection 2026–2027</div>
-        <div id="weekProjectionSection"></div>
-      </div>
-
       <div style="height:20px"></div>`;
 
     // Register Chart.js datalabels plugin inline
@@ -3384,8 +3448,7 @@
       document.getElementById('waitBox').innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:11px">Need 2+ trade dates for gap analysis</div>';
     }
 
-    // Week Projection
-    renderWeekProjection();
+
   };
 
   let selectedPhase   = 'post';
