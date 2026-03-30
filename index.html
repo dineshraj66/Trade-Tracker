@@ -1392,6 +1392,29 @@
           </div>
         </div>
       </div>
+
+      <!-- Maximize Trade -->
+      <div style="margin-top:10px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:10px">
+        <div style="font-size:9px;font-weight:700;color:#00d4ff;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">📈 Maximize Trade</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:flex-start;gap:8px;font-size:10px;color:var(--text);line-height:1.5">
+            <span style="color:#00d4ff;font-weight:700;flex-shrink:0">1)</span>
+            <span>If <span style="color:#fbbf24;font-weight:700">(T1 = Candle HL) &lt; 1%</span> — focus on trailing SL</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;font-size:10px;color:var(--text);line-height:1.5">
+            <span style="color:#00d4ff;font-weight:700;flex-shrink:0">2)</span>
+            <span>If <span style="color:#00e5b0;font-weight:700">(T1 = Candle HL) &gt; 1%</span> — book 50/65% and trail SL</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;font-size:10px;color:var(--text);line-height:1.5">
+            <span style="color:#00d4ff;font-weight:700;flex-shrink:0">3)</span>
+            <span>Only way to come out of breakeven — be patient and follow the plan</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:8px;font-size:10px;color:var(--text);line-height:1.5">
+            <span style="color:#00d4ff;font-weight:700;flex-shrink:0">4)</span>
+            <span>At the same time — <span style="color:#ef4444;font-weight:700">do not be greedy</span></span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <label class="form-label">Emotion</label>
@@ -2092,15 +2115,17 @@
       weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]}`, td,
         interrupted: interruptDays.length > 0, interruptDays,
         start: wsISO.slice(5), end: weISO.slice(5), isCurrent,
-        isUpcoming: isFuture && weeks.every(w => !w.isCurrent) });
+        isUpcoming: false });
       wNum++; d.setDate(d.getDate()+7);
     }
 
-    // Mark first upcoming week if no current week found
+    // Mark only the first future week as upcoming
     const hasCurrent = weeks.some(w => w.isCurrent);
-    if (!hasCurrent) {
-      const first = weeks.find(w => w.start > todayISO.slice(5));
-      if (first) first.isUpcoming = true;
+    const firstUpcoming = weeks.find(w => w.start > todayISO.slice(5));
+    if (!hasCurrent && firstUpcoming) firstUpcoming.isUpcoming = true;
+    if (hasCurrent) {
+      const nextWeek = weeks.find(w => w.start > todayISO.slice(5));
+      if (nextWeek) nextWeek.isUpcoming = true;
     }
 
     const groups = {5:0,4:0,3:0,2:0,1:0,0:0};
