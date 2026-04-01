@@ -1109,7 +1109,14 @@
     <div class="app-title">Trade<span>Tracker</span></div>
     <div class="header-date" id="headerDate"></div>
   </div>
-  <div style="font-size:10px;color:var(--muted)" id="syncStatus">🔴 Local</div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="https://zerodha.com/marketintel/bulletin/" target="_blank" rel="noopener"
+      title="SEBI Circulars"
+      style="display:flex;align-items:center;gap:4px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);border-radius:8px;padding:4px 8px;text-decoration:none;color:var(--warn);font-size:9px;font-weight:700;font-family:var(--font-head)">
+      🔔 SEBI
+    </a>
+    <div style="font-size:10px;color:var(--muted)" id="syncStatus">🔴 Local</div>
+  </div>
 </header>
 
 <!-- ─── Tabs ────────────────────────────────────── -->
@@ -1249,30 +1256,18 @@
 
       <!-- Pre-Session Checklist -->
       <div class="card" style="margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:14px">✅ Pre-Session Checklist</div>
-        <div id="setupChecklist" style="display:flex;flex-direction:column;gap:10px">
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc1" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Move index with ideal setup</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc2" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Label stock and do calculation</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc3" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Set timer and move away</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc4" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Check for confirmation</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
-            <input type="checkbox" id="sc5" class="setup-chk">
-            <span style="font-size:12px;color:var(--text)">Else move away and repeat</span>
-          </label>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="card-title" style="margin-bottom:0">✅ Pre-Session Checklist</div>
+          <button id="addChecklistBtn" style="background:rgba(0,229,176,0.12);border:1px solid rgba(0,229,176,0.3);border-radius:8px;color:var(--accent);font-size:10px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:var(--font-head)">+ Add</button>
         </div>
-        <!-- All checked message -->
+        <div id="setupChecklist" style="display:flex;flex-direction:column;gap:10px"></div>
+        <div id="addChecklistForm" style="display:none;margin-top:10px">
+          <input id="newChecklistInput" class="form-control" type="text" placeholder="New checklist item…" style="margin-bottom:8px">
+          <div style="display:flex;gap:8px">
+            <button id="saveChecklistItemBtn" style="flex:1;padding:8px;background:var(--accent);border:none;border-radius:8px;color:#000;font-family:var(--font-head);font-size:11px;font-weight:700;cursor:pointer">Save</button>
+            <button id="cancelChecklistItemBtn" style="flex:1;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-head);font-size:11px;cursor:pointer">Cancel</button>
+          </div>
+        </div>
         <div id="setupAllDoneMsg" style="display:none;margin-top:12px;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.3);border-radius:8px;padding:10px;text-align:center;font-size:11px;font-weight:600;color:var(--accent);line-height:1.5">
           ✅ Setup complete — Now wait patiently for your edge!
         </div>
@@ -1280,25 +1275,19 @@
 
       <!-- Relax & Patience Reminders -->
       <div class="card" style="margin-bottom:14px">
-        <div class="card-title" style="margin-bottom:12px">🧘 Relax & Patience</div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">🫁</span><span>Do box breathing</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">🧘 Relax & Patience</div>
+          <button id="addRelaxBtn" style="background:rgba(0,212,255,0.1);border:1px solid rgba(0,212,255,0.25);border-radius:8px;color:#00d4ff;font-size:10px;font-weight:700;padding:4px 10px;cursor:pointer;font-family:var(--font-head)">+ Add</button>
+        </div>
+        <div id="relaxList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div id="addRelaxForm" style="display:none;margin-top:10px">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="newRelaxEmoji" class="form-control" type="text" placeholder="🫁" style="width:56px;text-align:center;font-size:16px">
+            <input id="newRelaxText" class="form-control" type="text" placeholder="Reminder text…" style="flex:1">
           </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">☀️</span><span>Get some sunlight</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">📵</span><span>Do not watch movie or social media</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">🤫</span><span>Do not call or chat with others</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">👁</span><span>Edge may appear in same or different form — stay focused</span>
-          </div>
-          <div style="display:flex;align-items:flex-start;gap:10px;font-size:11px;color:var(--text)">
-            <span style="font-size:15px;flex-shrink:0">🏠</span><span>Do not involve in household work</span>
+          <div style="display:flex;gap:8px">
+            <button id="saveRelaxItemBtn" style="flex:1;padding:8px;background:#00d4ff;border:none;border-radius:8px;color:#000;font-family:var(--font-head);font-size:11px;font-weight:700;cursor:pointer">Save</button>
+            <button id="cancelRelaxItemBtn" style="flex:1;padding:8px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-head);font-size:11px;cursor:pointer">Cancel</button>
           </div>
         </div>
       </div>
@@ -3354,65 +3343,216 @@
         trailingMarkers.forEach(m => items.push({ kind: m.type, date: m.date }));
       }
 
-      // Render items
-      const dotsHtml = items.map((item, i) => {
-        const isFirst = i === 0;
-        const isLast  = i === items.length - 1;
-        const lineL   = isFirst ? 'transparent' : 'var(--border)';
-        const lineR   = isLast  ? 'transparent' : 'var(--border)';
+      // Group items by calendar week (Mon–Fri)
+      // Find the ISO week number for each item's date
+      function getMonday(iso) {
+        const d = new Date(iso + 'T00:00:00');
+        const day = d.getDay(); // 0=Sun
+        const diff = (day === 0 ? -6 : 1 - day);
+        d.setDate(d.getDate() + diff);
+        return localISO(d);
+      }
+      function getItemDate(item) {
+        return item.kind === 'trade' ? item.trade.date : item.date;
+      }
 
-        if (item.kind === 'trade') {
-          const t   = item.trade;
-          const idx = item.tradeIdx;
-          const exit = t.exitCategory || '?';
-          const col  = EXIT_COLORS[exit] || '#6b7a99';
-          const lbl  = EXIT_SHORT[exit]  || exit;
-          return `
-            <div style="display:flex;flex-direction:column;align-items:center;width:64px;flex-shrink:0">
-              <div style="font-family:var(--font-mono);font-size:8px;color:var(--muted);text-align:center;line-height:1.4;margin-bottom:4px">
-                Trade ${idx+1}<br>${fmtD(t.date)}
-              </div>
-              <div style="display:flex;flex-direction:row;align-items:center;width:100%">
-                <div style="flex:1;height:2px;background:${lineL}"></div>
-                <div style="width:34px;height:34px;border-radius:50%;background:${col}22;border:2px solid ${col};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:9px;font-weight:700;color:${col}">${idx+1}</div>
-                <div style="flex:1;height:2px;background:${lineR}"></div>
-              </div>
-              <div style="font-size:9px;font-weight:700;color:${col};text-align:center;margin-top:6px;line-height:1.3;max-width:60px">${lbl}</div>
-              <div style="font-size:8px;color:var(--muted);text-align:center;margin-top:3px;line-height:1.3;max-width:60px">${t.strategy||''}</div>
-            </div>`;
-        } else {
-          // H, L or NOP marker
-          const col  = item.kind === 'H'   ? '#7c5cfc'
-                     : item.kind === 'L'   ? '#fbbf24'
-                     :                       '#4a5a78';
-          const lbl  = item.kind === 'H'   ? 'Holiday'
-                     : item.kind === 'L'   ? 'Leave'
-                     :                       'NOP';
-          const txt  = item.kind === 'NOP' ? 'N' : item.kind;
-          return `
-            <div style="display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0">
-              <div style="font-family:var(--font-mono);font-size:8px;color:var(--muted);text-align:center;line-height:1.4;margin-bottom:4px">
-                &nbsp;<br>${fmtD(item.date)}
-              </div>
-              <div style="display:flex;flex-direction:row;align-items:center;width:100%">
-                <div style="flex:1;height:2px;background:${lineL}"></div>
-                <div style="width:26px;height:26px;border-radius:50%;background:${col}22;border:1.5px dashed ${col};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font-mono);font-size:9px;font-weight:700;color:${col}">${txt}</div>
-                <div style="flex:1;height:2px;background:${lineR}"></div>
-              </div>
-              <div style="font-size:8px;color:${col};text-align:center;margin-top:6px;line-height:1.3">${lbl}</div>
-            </div>`;
+      // Group into calendar weeks
+      const weekMap = {};
+      const weekOrder = [];
+      items.forEach(item => {
+        const iso = getItemDate(item);
+        if (!iso) return;
+        const mon = getMonday(iso);
+        if (!weekMap[mon]) { weekMap[mon] = []; weekOrder.push(mon); }
+        weekMap[mon].push(item);
+      });
+      const rows = weekOrder.map(mon => weekMap[mon]);
+      const ITEMS_PER_ROW = Math.max(...rows.map(r => r.length), 5);
+
+      // Layout constants
+      const CELL_W   = 56;  // width per cell
+      const CELL_H   = 110;  // height per row — enough for circle + exit label + date
+      const BEND_H   = 24;  // height of bend connector
+      const DOT_R    = 16;  // trade dot radius
+      const NOP_R    = 11;  // nop dot radius
+      const LABEL_W  = 36;  // left week label width
+      const PAD      = 8;
+      const totalW   = LABEL_W + ITEMS_PER_ROW * CELL_W + PAD * 2;
+      const totalH   = rows.length * (CELL_H + BEND_H) + PAD * 2;
+
+      const canvas = document.createElement('canvas');
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width  = totalW * dpr;
+      canvas.height = totalH * dpr;
+      canvas.style.width  = totalW + 'px';
+      canvas.style.height = totalH + 'px';
+      canvas.style.display = 'block';
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+
+      const BORDER_COL = '#2a3a5a';
+      const MUTED_COL  = '#6b7a99';
+      const BG_COL     = '#0d1b2e';
+
+      function hexToRgba(hex, a) {
+        const r = parseInt(hex.slice(1,3),16);
+        const g = parseInt(hex.slice(3,5),16);
+        const b = parseInt(hex.slice(5,7),16);
+        return `rgba(${r},${g},${b},${a})`;
+      }
+
+      // Pre-compute dot X positions for all rows (needed for bend connections)
+      function getDotCx(iso, reversed) {
+        const dow = iso ? new Date(iso+'T00:00:00').getDay() : 1;
+        const col0 = (dow === 0 ? 4 : dow - 1); // Mon=0..Fri=4
+        const colPos = reversed ? (4 - col0) : col0;
+        return LABEL_W + PAD + colPos * CELL_W + CELL_W / 2;
+      }
+
+      rows.forEach((row, rowIdx) => {
+        const reversed = rowIdx % 2 === 1;
+        const displayRow = reversed ? [...row].reverse() : row;
+        const rowY = PAD + rowIdx * (CELL_H + BEND_H) + CELL_H * 0.38; // dot sits in upper 38% of row
+        const isLastRow = rowIdx === rows.length - 1;
+
+        // Week label
+        const firstActual = row[0];
+        if (firstActual) {
+          const wkLbl = fmtD(getItemDate(firstActual));
+          ctx.font = '7px monospace';
+          ctx.fillStyle = MUTED_COL;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(wkLbl, LABEL_W / 2, rowY);
         }
-      }).join('');
+
+        // Compute all dot X positions for this row
+        const dotXs = displayRow.map(item => getDotCx(getItemDate(item), reversed));
+        const rowLineStartX = Math.min(...dotXs) - CELL_W/2 + 8;
+        const rowLineEndX   = Math.max(...dotXs) + CELL_W/2 - 8;
+
+        // Horizontal line connecting all dots
+        ctx.beginPath();
+        ctx.strokeStyle = BORDER_COL;
+        ctx.lineWidth = 2;
+        ctx.moveTo(rowLineStartX, rowY);
+        ctx.lineTo(rowLineEndX, rowY);
+        ctx.stroke();
+
+        // Draw each dot
+        displayRow.forEach((item, i) => {
+          const iso = getItemDate(item);
+          const cx = dotXs[i];
+          const cy = rowY;
+
+          if (item.kind === 'trade') {
+            const t   = item.trade;
+            const idx = item.tradeIdx;
+            const exit = t.exitCategory || '?';
+            const col  = EXIT_COLORS[exit] || '#6b7a99';
+            const lbl  = EXIT_SHORT[exit]  || exit;
+
+            // Glow
+            const grd = ctx.createRadialGradient(cx,cy,0,cx,cy,DOT_R+4);
+            grd.addColorStop(0, hexToRgba(col, 0.3));
+            grd.addColorStop(1, hexToRgba(col, 0));
+            ctx.beginPath(); ctx.arc(cx,cy,DOT_R+4,0,Math.PI*2);
+            ctx.fillStyle = grd; ctx.fill();
+
+            // Fill
+            ctx.beginPath(); ctx.arc(cx,cy,DOT_R,0,Math.PI*2);
+            ctx.fillStyle = hexToRgba(col, 0.15); ctx.fill();
+            // Border
+            ctx.beginPath(); ctx.arc(cx,cy,DOT_R,0,Math.PI*2);
+            ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke();
+            // Number
+            ctx.font = 'bold 10px monospace';
+            ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(idx+1, cx, cy);
+            // Exit label below dot
+            ctx.font = 'bold 8px sans-serif';
+            ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText(lbl, cx, cy + DOT_R + 4);
+            // Date below exit label — grey
+            ctx.font = '8px monospace';
+            ctx.fillStyle = '#8899bb'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText(fmtD(t.date), cx, cy + DOT_R + 16);
+
+          } else {
+            const col = item.kind === 'H' ? '#7c5cfc' : item.kind === 'L' ? '#fbbf24' : '#4a5a78';
+            const txt = item.kind === 'NOP' ? 'N' : item.kind;
+            // Fill
+            ctx.beginPath(); ctx.arc(cx,cy,DOT_R,0,Math.PI*2);
+            ctx.fillStyle = hexToRgba(col, 0.1); ctx.fill();
+            // Dashed border
+            ctx.setLineDash([4,3]);
+            ctx.beginPath(); ctx.arc(cx,cy,DOT_R,0,Math.PI*2);
+            ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.stroke();
+            ctx.setLineDash([]);
+            // Text inside
+            ctx.font = 'bold 9px monospace';
+            ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(txt, cx, cy);
+            // Label below
+            ctx.font = 'bold 8px sans-serif';
+            ctx.fillStyle = col; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            const lbl2 = item.kind === 'H' ? 'Hol' : item.kind === 'L' ? 'Lve' : 'NOP';
+            ctx.fillText(lbl2, cx, cy + DOT_R + 4);
+            // Date below label — grey
+            ctx.font = '8px monospace';
+            ctx.fillStyle = '#8899bb'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.fillText(fmtD(iso), cx, cy + DOT_R + 16);
+          }
+        });
+
+        if (!isLastRow) {
+          const nextRowY = PAD + (rowIdx+1) * (CELL_H + BEND_H) + CELL_H / 2;
+          const nextReversed = (rowIdx+1) % 2 === 1;
+          const nextRow = rows[rowIdx+1];
+          const nextDisplayRow = nextReversed ? [...nextRow].reverse() : nextRow;
+          const nextDotXs = nextDisplayRow.map(item => getDotCx(getItemDate(item), nextReversed));
+
+          // Current row end X and next row start X
+          const curEndX  = !reversed ? rowLineEndX   : rowLineStartX;
+          const nxtStartX = !nextReversed ? Math.min(...nextDotXs) - CELL_W/2 + 8
+                                          : Math.max(...nextDotXs) + CELL_W/2 - 8;
+
+          // Bend on right side if current row is L→R, left side if R→L
+          const bendR = 12;
+          ctx.beginPath();
+          ctx.strokeStyle = BORDER_COL;
+          ctx.lineWidth = 2;
+          if (!reversed) {
+            // End on right → bend right → come back left on next row
+            const bx = LABEL_W + PAD + 5 * CELL_W; // right edge
+            ctx.moveTo(curEndX, rowY);
+            ctx.lineTo(bx - bendR, rowY);
+            ctx.arcTo(bx, rowY, bx, rowY + bendR, bendR);
+            ctx.lineTo(bx, nextRowY - bendR);
+            ctx.arcTo(bx, nextRowY, bx - bendR, nextRowY, bendR);
+            ctx.lineTo(nxtStartX, nextRowY);
+          } else {
+            // End on left → bend left → come back right on next row
+            const bx = LABEL_W + PAD; // left edge
+            ctx.moveTo(curEndX, rowY);
+            ctx.lineTo(bx + bendR, rowY);
+            ctx.arcTo(bx, rowY, bx, rowY + bendR, bendR);
+            ctx.lineTo(bx, nextRowY - bendR);
+            ctx.arcTo(bx, nextRowY, bx + bendR, nextRowY, bendR);
+            ctx.lineTo(nxtStartX, nextRowY);
+          }
+          ctx.stroke();
+        }
+      });
 
       seqEl.innerHTML = `
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)">
           ${legendHtml}
         </div>
-        <div style="overflow-x:auto;padding-bottom:8px">
-          <div style="display:flex;flex-direction:row;align-items:flex-start;min-width:max-content;padding:4px 0 12px 0">
-            ${dotsHtml}
-          </div>
+        <div style="overflow-x:auto">
+          <div id="circuitCanvasWrap" style="display:inline-block"></div>
         </div>`;
+      document.getElementById('circuitCanvasWrap').appendChild(canvas);
     }
 
     if(waitDays.length>1){
@@ -3912,22 +4052,216 @@
   }
 
   // Setup checklist logic
-  function bindSetupChecklist() {
-    document.querySelectorAll('.setup-chk').forEach(chk => {
-      chk.addEventListener('change', function() {
-        const all = [...document.querySelectorAll('.setup-chk')].every(c => c.checked);
-        const msg = document.getElementById('setupAllDoneMsg');
-        if (msg) msg.style.display = all ? 'block' : 'none';
-      });
+  // ── Setup Analysis Editable Sections ─────────────────────────────────
+  const DEFAULT_CHECKLIST = [
+    'Move index with ideal setup',
+    'Label stock and do calculation',
+    'Set timer and move away',
+    'Check for confirmation',
+    'Else move away and repeat',
+  ];
+  const DEFAULT_RELAX = [
+    { emoji:'🫁', text:'Do box breathing' },
+    { emoji:'☀️', text:'Get some sunlight' },
+    { emoji:'📵', text:'Do not watch movie or social media' },
+    { emoji:'🤫', text:'Do not call or chat with others' },
+    { emoji:'👁', text:'Edge may appear in same or different form — stay focused' },
+    { emoji:'🏠', text:'Do not involve in household work' },
+  ];
+
+  let setupChecklistItems = null; // null = not loaded
+  let setupRelaxItems     = null;
+
+  async function loadSetupItems() {
+    // Load from localStorage first
+    const ck = localStorage.getItem('tt_setup_checklist');
+    const rx = localStorage.getItem('tt_setup_relax');
+    if (ck) setupChecklistItems = JSON.parse(ck);
+    if (rx) setupRelaxItems     = JSON.parse(rx);
+    // Then Firestore
+    if (!db) { renderSetupSections(); return; }
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'setupItems'));
+      if (snap.exists()) {
+        const d = snap.data();
+        if (d.checklist) { setupChecklistItems = d.checklist; localStorage.setItem('tt_setup_checklist', JSON.stringify(d.checklist)); }
+        if (d.relax)     { setupRelaxItems     = d.relax;     localStorage.setItem('tt_setup_relax',     JSON.stringify(d.relax)); }
+      }
+    } catch(e) { console.warn('loadSetupItems', e); }
+    renderSetupSections();
+  }
+
+  async function saveSetupItems() {
+    localStorage.setItem('tt_setup_checklist', JSON.stringify(setupChecklistItems));
+    localStorage.setItem('tt_setup_relax',     JSON.stringify(setupRelaxItems));
+    if (db) {
+      try { await setDoc(doc(db,'settings','setupItems'), { checklist: setupChecklistItems, relax: setupRelaxItems }); }
+      catch(e) { console.warn('saveSetupItems', e); }
+    }
+  }
+
+  function getChecklist() { return setupChecklistItems || DEFAULT_CHECKLIST; }
+  function getRelax()     { return setupRelaxItems     || DEFAULT_RELAX; }
+
+  function renderSetupSections() {
+    renderSetupChecklist();
+    renderSetupRelax();
+  }
+
+  function renderSetupChecklist() {
+    const el = document.getElementById('setupChecklist');
+    if (!el) return;
+    const items = getChecklist();
+    el.innerHTML = items.map((item, i) => `
+      <div class="setup-item-row" data-idx="${i}" style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" class="setup-chk" style="flex-shrink:0">
+        <span id="scText_${i}" style="flex:1;font-size:12px;color:var(--text);cursor:text" ondblclick="inlineEditSetup('checklist',${i})">${item}</span>
+        <div style="display:flex;gap:4px;opacity:0.4" class="setup-row-btns">
+          <button data-edit-chk="${i}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px">✏️</button>
+          <button data-del-chk="${i}" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:11px;padding:2px 4px">✕</button>
+        </div>
+      </div>`).join('');
+    // Bind checkboxes
+    el.querySelectorAll('.setup-chk').forEach(chk => {
+      chk.addEventListener('change', checkSetupDone);
     });
+    // Bind edit/delete via delegation
+    el.addEventListener('click', function(e) {
+      const editBtn = e.target.closest('[data-edit-chk]');
+      const delBtn  = e.target.closest('[data-del-chk]');
+      if (editBtn) inlineEditSetup('checklist', parseInt(editBtn.dataset.editChk));
+      if (delBtn)  deleteSetupItem('checklist', parseInt(delBtn.dataset.delChk));
+    });
+  }
+
+  function renderSetupRelax() {
+    const el = document.getElementById('relaxList');
+    if (!el) return;
+    const items = getRelax();
+    el.innerHTML = items.map((item, i) => `
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <span style="font-size:15px;flex-shrink:0">${item.emoji}</span>
+        <span id="rxText_${i}" style="flex:1;font-size:11px;color:var(--text);cursor:text" ondblclick="inlineEditSetup('relax',${i})">${item.text}</span>
+        <div style="display:flex;gap:4px;opacity:0.4">
+          <button data-edit-rx="${i}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:2px 4px">✏️</button>
+          <button data-del-rx="${i}"  style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:11px;padding:2px 4px">✕</button>
+        </div>
+      </div>`).join('');
+    el.addEventListener('click', function(e) {
+      const editBtn = e.target.closest('[data-edit-rx]');
+      const delBtn  = e.target.closest('[data-del-rx]');
+      if (editBtn) inlineEditSetup('relax', parseInt(editBtn.dataset.editRx));
+      if (delBtn)  deleteSetupItem('relax',  parseInt(delBtn.dataset.delRx));
+    });
+  }
+
+  function checkSetupDone() {
+    const all = [...document.querySelectorAll('.setup-chk')].every(c => c.checked);
+    const msg = document.getElementById('setupAllDoneMsg');
+    if (msg) msg.style.display = all ? 'block' : 'none';
+  }
+
+  window.inlineEditSetup = function(type, idx) {
+    const items = type === 'checklist' ? getChecklist() : getRelax();
+    const current = type === 'checklist' ? items[idx] : items[idx].text;
+    const spanId  = type === 'checklist' ? `scText_${idx}` : `rxText_${idx}`;
+    const span = document.getElementById(spanId);
+    if (!span) return;
+    const input = document.createElement('input');
+    input.type = 'text'; input.value = current;
+    input.style.cssText = 'width:100%;background:var(--bg3);border:1px solid var(--accent);border-radius:6px;padding:4px 8px;color:var(--text);font-size:12px;font-family:var(--font-mono)';
+    span.replaceWith(input);
+    input.focus(); input.select();
+    async function saveEdit() {
+      const val = input.value.trim();
+      if (val) {
+        if (type === 'checklist') {
+          if (!setupChecklistItems) setupChecklistItems = [...DEFAULT_CHECKLIST];
+          setupChecklistItems[idx] = val;
+        } else {
+          if (!setupRelaxItems) setupRelaxItems = DEFAULT_RELAX.map(r=>({...r}));
+          setupRelaxItems[idx].text = val;
+        }
+        await saveSetupItems();
+        renderSetupSections();
+      } else {
+        renderSetupSections();
+      }
+    }
+    input.addEventListener('blur', saveEdit);
+    input.addEventListener('keydown', e => { if(e.key==='Enter') input.blur(); if(e.key==='Escape') renderSetupSections(); });
+  };
+
+  async function deleteSetupItem(type, idx) {
+    if (type === 'checklist') {
+      if (!setupChecklistItems) setupChecklistItems = [...DEFAULT_CHECKLIST];
+      setupChecklistItems.splice(idx, 1);
+    } else {
+      if (!setupRelaxItems) setupRelaxItems = DEFAULT_RELAX.map(r=>({...r}));
+      setupRelaxItems.splice(idx, 1);
+    }
+    await saveSetupItems();
+    renderSetupSections();
+  }
+
+  function bindSetupChecklist() {
+    // + Add checklist item
+    const addChkBtn = document.getElementById('addChecklistBtn');
+    if (addChkBtn) addChkBtn.addEventListener('click', () => {
+      const f = document.getElementById('addChecklistForm');
+      if (f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+    });
+    const saveChkBtn = document.getElementById('saveChecklistItemBtn');
+    if (saveChkBtn) saveChkBtn.addEventListener('click', async () => {
+      const val = document.getElementById('newChecklistInput').value.trim();
+      if (!val) return;
+      if (!setupChecklistItems) setupChecklistItems = [...DEFAULT_CHECKLIST];
+      setupChecklistItems.push(val);
+      await saveSetupItems();
+      document.getElementById('newChecklistInput').value = '';
+      document.getElementById('addChecklistForm').style.display = 'none';
+      renderSetupChecklist();
+    });
+    const cancelChkBtn = document.getElementById('cancelChecklistItemBtn');
+    if (cancelChkBtn) cancelChkBtn.addEventListener('click', () => {
+      document.getElementById('addChecklistForm').style.display = 'none';
+    });
+
+    // + Add relax item
+    const addRxBtn = document.getElementById('addRelaxBtn');
+    if (addRxBtn) addRxBtn.addEventListener('click', () => {
+      const f = document.getElementById('addRelaxForm');
+      if (f) f.style.display = f.style.display==='none' ? 'block' : 'none';
+    });
+    const saveRxBtn = document.getElementById('saveRelaxItemBtn');
+    if (saveRxBtn) saveRxBtn.addEventListener('click', async () => {
+      const emoji = document.getElementById('newRelaxEmoji').value.trim() || '💡';
+      const text  = document.getElementById('newRelaxText').value.trim();
+      if (!text) return;
+      if (!setupRelaxItems) setupRelaxItems = DEFAULT_RELAX.map(r=>({...r}));
+      setupRelaxItems.push({ emoji, text });
+      await saveSetupItems();
+      document.getElementById('newRelaxEmoji').value = '';
+      document.getElementById('newRelaxText').value  = '';
+      document.getElementById('addRelaxForm').style.display = 'none';
+      renderSetupRelax();
+    });
+    const cancelRxBtn = document.getElementById('cancelRelaxItemBtn');
+    if (cancelRxBtn) cancelRxBtn.addEventListener('click', () => {
+      document.getElementById('addRelaxForm').style.display = 'none';
+    });
+
+    // Close button
     const closeBtn = document.getElementById('closeSetupBtn');
     if (closeBtn) closeBtn.addEventListener('click', function() {
       setEmotionView('post');
-      // Reset checkboxes
       document.querySelectorAll('.setup-chk').forEach(c => c.checked = false);
       const msg = document.getElementById('setupAllDoneMsg');
       if (msg) msg.style.display = 'none';
     });
+
+    // Load from Firestore
+    loadSetupItems();
   }
 
   window.setEmotionView = function(view) {
@@ -3957,6 +4291,7 @@
     });
     if (view === 'setup') {
       startSetupMotivation();
+      renderSetupSections();
     } else {
       stopSetupMotivation();
       const ec = Chart.getChart('chartEmotions');
