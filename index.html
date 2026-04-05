@@ -3299,12 +3299,12 @@
       const tracked = chartPct.filter(v => v !== null);
       const curAvg2 = runAvg[runAvg.length - 1];
       const bestVal = tracked.length ? Math.max(...tracked) : null;
-      const bestIdx = bestVal !== null ? chartPct.indexOf(bestVal) : -1;
+      const bestCount = bestVal !== null ? chartPct.filter(v => v === bestVal).length : 0;
       const adhCurAvg = document.getElementById('adhCurAvg');
       const adhBestWk = document.getElementById('adhBestWk');
       const adhWkCnt  = document.getElementById('adhWkCount');
       if (adhCurAvg) adhCurAvg.textContent = curAvg2 !== null ? curAvg2 + '%' : '—';
-      if (adhBestWk) adhBestWk.textContent = bestVal !== null ? bestVal + '% (W'+(bestIdx+1)+')' : '—';
+      if (adhBestWk) adhBestWk.textContent = bestVal !== null ? bestVal + '% × ' + bestCount + 'wk' : '—';
       if (adhWkCnt)  adhWkCnt.textContent  = tracked.length;
 
       const existing = Chart.getChart('adhLineChart');
