@@ -92,14 +92,14 @@
     }
     .tab-btn {
       flex: 1;
-      padding: 10px 4px;
+      padding: 10px 2px;
       background: none;
       border: none;
       color: var(--muted);
       font-family: var(--font-head);
-      font-size: 12px;
+      font-size: 10px;
       font-weight: 600;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       cursor: pointer;
       border-bottom: 2px solid transparent;
       transition: all 0.2s;
@@ -1125,6 +1125,7 @@
   <button class="tab-btn" onclick="switchTab('stats')"  id="tab-stats" >📊 Stats</button>
   <button class="tab-btn" onclick="switchTab('trades')" id="tab-trades">📋 Trades</button>
   <button class="tab-btn" onclick="switchTab('emotions')" id="tab-emotions">🧠 Mind</button>
+  <button class="tab-btn" onclick="switchTab('week')" id="tab-week">📅 Week</button>
 </nav>
 
 <!-- ─── Home Page ────────────────────────────────── -->
@@ -1209,6 +1210,14 @@
       </div>
 
     </div>
+  </div>
+</div>
+
+
+<!-- ─── Week Page ─────────────────────────────────── -->
+<div class="page" id="page-week">
+  <div style="padding:16px">
+    <div id="weekTabContent"></div>
   </div>
 </div>
 
@@ -1440,6 +1449,38 @@
   </div>
 </div>
 
+<!-- ─── Adherence Entry Modal ─────────────────────── -->
+<div id="adherenceModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;align-items:center;justify-content:center;padding:24px">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:300px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent)">📋 No Trade Reason</div>
+      <button id="adherenceModalClose" onclick="document.getElementById('adherenceModalOverlay').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px" id="adherenceDateLabel"></div>
+
+    <!-- Primary reason -->
+    <label class="form-label">Reason for No Trade</label>
+    <select class="form-control" id="adherenceReason1" onchange="window.updateAdherenceSubReason(this.value,'')" style="margin-bottom:12px;-webkit-appearance:menulist;appearance:menulist">
+      <option value="">— Select reason —</option>
+      <option value="No Setup">No Setup</option>
+      <option value="Setup Available">Setup Available</option>
+      <option value="Infra Issue">Infra Issue</option>
+    </select>
+
+    <!-- Secondary reason — shown based on primary -->
+    <div id="adherenceReason2Wrap" style="display:none">
+      <label class="form-label" id="adherenceReason2Label">Sub-reason</label>
+      <select class="form-control" id="adherenceReason2" style="margin-bottom:12px;-webkit-appearance:menulist;appearance:menulist">
+      </select>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button id="adherenceSaveBtn" onclick="console.log('BTN CLICKED',window._doSaveAdherence,window._adherenceEditDate);(function(){var r1=document.getElementById('adherenceReason1').value;if(!r1){alert('Select a reason');return;}var r2=document.getElementById('adherenceReason2Wrap').style.display!=='none'?document.getElementById('adherenceReason2').value||'':'';var dt=window._adherenceEditDate;if(!dt){alert('No date');return;}if(window._doSaveAdherence){window._doSaveAdherence(r1,r2);}else{alert('_doSaveAdherence not ready');}document.getElementById('adherenceModalOverlay').style.display='none';})()" style="flex:1;padding:10px;background:var(--accent);border:none;border-radius:8px;color:#000;font-family:var(--font-head);font-size:12px;font-weight:700;cursor:pointer">Save</button>
+      <button id="adherenceCancelBtn" onclick="document.getElementById('adherenceModalOverlay').style.display='none'" style="flex:1;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--font-head);font-size:12px;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── FAB (absolute, stays inside body max-width) ─ -->
 <button class="fab fab-hidden" id="fabBtn" onclick="openModal()" title="Add Trade">+</button>
 <button class="fab fab-hidden" id="fabEmotionBtn" title="Add Emotion" style="background:var(--accent3);box-shadow:0 4px 22px rgba(124,92,252,0.45)">+</button>
@@ -1453,9 +1494,8 @@
       <label class="form-label">Type</label>
       <select class="form-control" id="leaveType">
         <option value="Leave (Personal)">🏖 Leave (Personal)</option>
-        <option value="Holiday (Custom)">🎉 Holiday (Custom)</option>
         <option value="Family Event">👨‍👩‍👧 Family Event</option>
-        <option value="Other">📌 Other</option>
+        <option value="Infra Issue">⚡ Infra Issue</option>
       </select>
     </div>
     <div class="form-group">
@@ -1911,6 +1951,7 @@
     const fabEmo = document.getElementById('fabEmotionBtn');
     if (fabEmo) tab==='emotions' ? fabEmo.classList.remove('fab-hidden') : fabEmo.classList.add('fab-hidden');
     if (tab==='home')     renderHome();
+    if (tab==='week')     renderAdherence();
     if (tab==='emotions') {
       // Destroy chart first so it redraws at correct size
       const ec = Chart.getChart('chartEmotions');
@@ -2239,18 +2280,24 @@
     const nseSet   = new Set(nseArr.map(h => h.date));
     const leaveSet = new Set((Array.isArray(leaves)?leaves:[]).map(l => String(l.date).trim()));
     const MN       = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const today    = new Date();
+
+    // Count traded days per month
+    const tradeSet = new Set((Array.isArray(trades)?trades:[]).map(t => String(t.date).trim()));
 
     const data = MN.map((lbl, mo) => {
       const days = new Date(yr, mo+1, 0).getDate();
-      let count = 0;
+      let marketDays = 0, available = 0;
+      const moStr = yr+'-'+String(mo+1).padStart(2,'0');
       for (let d = 1; d <= days; d++) {
         const dt  = new Date(yr, mo, d);
-        const iso = yr+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
-        if (dt.getDay()===0||dt.getDay()===6) continue;
-        if (nseSet.has(iso)||leaveSet.has(iso)) continue;
-        count++;
+        const iso = moStr+'-'+String(d).padStart(2,'0');
+        if (dt.getDay()===0||dt.getDay()===6) continue; // skip weekends
+        if (nseSet.has(iso)) continue;                   // skip NSE holidays
+        marketDays++;                                     // market open day
+        if (!leaveSet.has(iso)) available++;              // available after personal leaves
       }
-      return count;
+      return { marketDays, available, lbl };
     });
 
     const ex = Chart.getChart('chartMonthlyTradingDays');
@@ -2260,10 +2307,15 @@
       const ctx = chart.ctx;
       chart.data.datasets.forEach((ds,i) => {
         chart.getDatasetMeta(i).data.forEach((bar,idx) => {
-          const v = ds.data[idx]; if (!v) return;
-          ctx.save(); ctx.fillStyle='#e8edf5'; ctx.font='bold 9px Space Mono,monospace';
-          ctx.textAlign='center'; ctx.textBaseline='bottom';
-          ctx.fillText(v, bar.x, bar.y-2); ctx.restore();
+          const v = data[idx];
+          if (!v || !v.marketDays) return;
+          ctx.save();
+          ctx.fillStyle = '#e8edf5';
+          ctx.font = 'bold 8px Space Mono,monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(`${v.marketDays}/${v.available}`, bar.x, bar.y - 2);
+          ctx.restore();
         });
       });
     }};
@@ -2272,14 +2324,25 @@
       type: 'bar',
       data: {
         labels: MN,
-        datasets:[{ data, borderRadius:5,
-          backgroundColor: data.map(v =>
-            v >= 22 ? '#00e5b0' : v >= 20 ? '#7c5cfc' : v >= 18 ? '#fbbf24' : '#ff6b35'
-          )
+        datasets:[{
+          data: data.map(d => d.marketDays),
+          borderRadius: 5,
+          backgroundColor: data.map(d => {
+            if (!d.marketDays) return '#1e2d45';
+            return d.available === d.marketDays ? '#00e5b0'   // no leaves
+                 : d.available >= d.marketDays - 1 ? '#7c5cfc' // 1 leave
+                 : d.available >= d.marketDays - 2 ? '#fbbf24' // 2 leaves
+                 : '#ff6b35';                                   // 3+ leaves
+          })
         }]
       },
       options: {
-        plugins:{ legend:{ display:false } },
+        plugins:{ legend:{ display:false },
+          tooltip:{ callbacks:{ label: ctx => {
+            const d = data[ctx.dataIndex];
+            return [`Market days: ${d.marketDays}`, `Available (excl. leaves): ${d.available}`];
+          }}}
+        },
         scales:{
           x:{ ticks:{color:'#6b7a99',font:{size:9}}, grid:{color:'#1e2d45'} },
           y:{ ticks:{color:'#6b7a99',font:{size:9}}, grid:{color:'#1e2d45'}, beginAtZero:true }
@@ -2663,19 +2726,38 @@
     // Group trades by level
     const byLevel = {};
     sorted.forEach(t => {
-      const lv = t.level ?? 0;
+      const lv = Number(t.level ?? 0);
       if (!byLevel[lv]) byLevel[lv] = [];
       byLevel[lv].push(t);
     });
 
-    // Render highest level first
-    Object.keys(byLevel).map(Number).sort((a,b)=>b-a).forEach(lv => {
+    // Determine current level (highest level with < 10 trades, or create next)
+    const levels = Object.keys(byLevel).map(Number).sort((a,b)=>a-b);
+    let currentLv = levels.length ? levels[levels.length-1] : 1;
+    if (byLevel[currentLv] && byLevel[currentLv].length >= 10) currentLv = currentLv + 1;
+
+    // Always render in descending order: highest level (current) at top
+    const sortedLevels = Object.keys(byLevel).map(Number).sort((a,b)=>b-a);
+    sortedLevels.forEach(lv => {
+      const isCurrentLv = lv === currentLv;
+      const lvTrades = byLevel[lv];
+      const isComplete = lvTrades.length >= 10;
+
       const gh = document.createElement('div');
       gh.className = 'level-group-header';
-      gh.innerHTML = `<span class="level-badge">Level ${lv}</span><span class="level-line"></span>`;
+      gh.style.cursor = 'pointer';
+      gh.innerHTML = `
+        <span class="level-badge">Level ${lv}${isCurrentLv?' ⚡':''}</span>
+        <span class="level-line"></span>
+        <span style="font-size:9px;color:${isComplete?'var(--accent)':'var(--muted)'};font-family:var(--font-mono);margin-left:8px">${lvTrades.length}/10 ${isComplete?'✅':''}</span>
+        <span id="lvArrow_${lv}" style="font-size:11px;color:var(--muted);margin-left:6px">${isCurrentLv?'▴':'▾'}</span>`;
       el.appendChild(gh);
 
-      byLevel[lv].forEach((t, idx) => {
+      const lvBody = document.createElement('div');
+      lvBody.id = 'lvBody_' + lv;
+      lvBody.style.display = isCurrentLv ? 'block' : 'none';
+
+      lvTrades.forEach((t, idx) => {
         const tradeNum = idx + 1;
         const banner = document.createElement('div');
         banner.className = 'trade-banner';
@@ -2689,9 +2771,31 @@
           </div>
           <span class="tag-lvl-inline">Level ${lv}</span>`;
         banner.onclick = () => openModal(t.id);
-        el.appendChild(banner);
+        lvBody.appendChild(banner);
+      });
+      el.appendChild(lvBody);
+
+      // Toggle on header click
+      gh.addEventListener('click', function() {
+        const body  = document.getElementById('lvBody_' + lv);
+        const arrow = document.getElementById('lvArrow_' + lv);
+        const open  = body.style.display !== 'none';
+        body.style.display  = open ? 'none' : 'block';
+        arrow.textContent   = open ? '▾' : '▴';
       });
     });
+
+    // If current level doesn't exist yet (next level), show at TOP
+    if (!byLevel[currentLv]) {
+      const gh = document.createElement('div');
+      gh.className = 'level-group-header';
+      gh.innerHTML = `<span class="level-badge">Level ${currentLv} ⚡</span><span class="level-line"></span><span style="font-size:9px;color:var(--muted);font-family:var(--font-mono);margin-left:8px">0/10 — Active</span>`;
+      const ph = document.createElement('div');
+      ph.style.cssText = 'text-align:center;padding:16px;color:var(--muted);font-size:11px';
+      ph.textContent = 'No trades yet in Level ' + currentLv + ' — tap + to log';
+      el.prepend(ph);
+      el.prepend(gh);
+    }
 
     // FAB spacer
     const sp = document.createElement('div');
@@ -2873,6 +2977,336 @@
     });
   }
 
+  // ── Adherence ────────────────────────────────────────────────────────
+  let adherenceData = {}; // { 'YYYY-MM-DD': { reason1, reason2 } }
+  let adherenceEditDate = null;
+
+  const ADHERENCE_SUB = {
+    'Setup Available': [
+      'MindFreezed - Multi opportunities',
+      'Fear of Failure / Loss of Money',
+      'Family Noise',
+      'Mental Fatigue - Not Calm',
+    ],
+    'Infra Issue': [
+      'Internet Slowness',
+      'Kite Issue',
+      'Excel Issue',
+    ],
+  };
+
+  async function loadAdherence() {
+    const cached = localStorage.getItem('tt_adherence');
+    if (cached) adherenceData = JSON.parse(cached);
+    if (!db) return;
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'adherence'));
+      if (snap.exists()) {
+        adherenceData = snap.data().entries || {};
+        localStorage.setItem('tt_adherence', JSON.stringify(adherenceData));
+      }
+    } catch(e) { console.warn('loadAdherence', e); }
+  }
+
+  async function saveAdherence() {
+    localStorage.setItem('tt_adherence', JSON.stringify(adherenceData));
+    if (db) {
+      try { await setDoc(doc(db, 'settings', 'adherence'), { entries: adherenceData }); }
+      catch(e) { console.warn('saveAdherence', e); }
+    }
+  }
+
+  function getNOPDates() {
+    const nseSet   = new Set(NSE_HOLIDAYS_2026.map(h => h.date));
+    const leaveSet = new Set((Array.isArray(leaves)?leaves:[]).map(l=>String(l.date).trim()));
+    const tradeSet = new Set((Array.isArray(trades)?trades:[]).map(t=>String(t.date).trim()));
+    const result   = [];
+    // Range: first trade date → last trade date
+    const tradeDates = [...tradeSet].filter(Boolean).sort();
+    if (!tradeDates.length) return [];
+    let d = new Date(tradeDates[0] + 'T00:00:00');
+    const end = new Date(localISO(new Date()) + 'T00:00:00'); // end = today
+    while (d <= end) {
+      const iso = localISO(d);
+      const dow = d.getDay();
+      if (dow !== 0 && dow !== 6 && !nseSet.has(iso) && !leaveSet.has(iso) && !tradeSet.has(iso)) {
+        result.push(iso);
+      }
+      d.setDate(d.getDate() + 1);
+    }
+    return result.reverse(); // recent first
+  }
+
+  function groupByWeek(dates) {
+    const weeks = {};
+    const order = [];
+    dates.forEach(iso => {
+      const d = new Date(iso + 'T00:00:00');
+      const dow = d.getDay();
+      const diff = dow === 0 ? -6 : 1 - dow;
+      const mon = new Date(d); mon.setDate(d.getDate() + diff);
+      const key = localISO(mon);
+      if (!weeks[key]) { weeks[key] = []; order.push(key); }
+      weeks[key].push(iso);
+    });
+    return { weeks, order };
+  }
+
+  function getAllWeekMondays(fromIso, toIso) {
+    // Returns all Monday dates (ISO) from the week containing fromIso to toIso
+    const result = [];
+    const d = new Date(fromIso + 'T00:00:00');
+    const dow = d.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    d.setDate(d.getDate() + diff); // move to Monday of first week
+    const end = new Date(toIso + 'T00:00:00');
+    while (d <= end) {
+      result.push(localISO(new Date(d)));
+      d.setDate(d.getDate() + 7);
+    }
+    return result;
+  }
+
+  function renderAdherence() {
+    const el = document.getElementById('adherenceSection') || document.getElementById('weekTabContent');
+    if (!el) return;
+    const nopDates = getNOPDates();
+    if (!nopDates.length) {
+      el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--muted);font-size:11px">No NOP dates found</div>';
+      return;
+    }
+    const { weeks, order } = groupByWeek(nopDates);
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    // ── Stats ──────────────────────────────────────────────────────────
+    const totalNOP = nopDates.length;
+    const tagged   = nopDates.filter(d => adherenceData[d]);
+    const r1counts = {}, r2counts = {};
+    tagged.forEach(d => {
+      const e = adherenceData[d];
+      r1counts[e.reason1] = (r1counts[e.reason1]||0)+1;
+      if (e.reason2) r2counts[e.reason2] = (r2counts[e.reason2]||0)+1;
+    });
+    const tradedDates = new Set((Array.isArray(trades)?trades:[]).map(t=>String(t.date).trim()));
+    const tradeDatesSorted = [...tradedDates].filter(Boolean).sort();
+    const today = localISO(new Date());
+
+    // ALL calendar weeks from first trade to today (for chart + list)
+    const allWeekMondays = tradeDatesSorted.length
+      ? getAllWeekMondays(tradeDatesSorted[0], today)
+      : [];
+
+    // Weekly adherence — all weeks, old→new (for chart left→right)
+    const wkAdh = allWeekMondays.map(mon => {
+      const wkDates = weeks[mon] || [];
+      const wkTraded = [...tradedDates].filter(d => {
+        const dm = new Date(d+'T00:00:00');
+        const diff2 = dm.getDay()===0?-6:1-dm.getDay();
+        const m = new Date(dm); m.setDate(dm.getDate()+diff2);
+        return localISO(m) === mon;
+      }).length;
+      const wkMissed = wkDates.filter(d => adherenceData[d]?.reason1 === 'Setup Available').length;
+      const denominator = wkTraded + wkMissed;
+      const pct = denominator > 0 ? Math.round(wkTraded / denominator * 100) : null;
+      const d0 = new Date(mon+'T00:00:00');
+      const label = `${d0.getDate()} ${MN[d0.getMonth()]}`;
+      return { label, pct, wkTraded, wkMissed, denominator, mon };
+    });
+
+    // NOP list uses allWeekMondays reversed (recent first)
+    const listWeekMondays = [...allWeekMondays].reverse();
+
+    // R1 breakdown
+    const r1Html = Object.entries(r1counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;color:var(--text)">${k}</span>
+        <span style="display:flex;align-items:baseline;gap:4px">
+          <span style="font-family:var(--font-head);font-size:16px;font-weight:800;color:#ff6b35">${Math.round(v/tagged.length*100)}%</span>
+          <span style="font-size:10px;color:var(--muted)">(${v})</span>
+        </span>
+      </div>`).join('') || '<div style="font-size:10px;color:var(--muted);padding:8px 0">No data yet — tap dates to log reasons</div>';
+
+    const r2Html = Object.entries(r2counts).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:11px;color:var(--text)">${k}</span>
+        <span style="display:flex;align-items:baseline;gap:4px">
+          <span style="font-family:var(--font-head);font-size:16px;font-weight:800;color:#7c5cfc">${Math.round(v/tagged.length*100)}%</span>
+          <span style="font-size:10px;color:var(--muted)">(${v})</span>
+        </span>
+      </div>`).join('') || '';
+
+    // Weekly adherence bars — all weeks, Jan→current (left to right)
+    const wkBarsHtml = wkAdh.map(w => {
+      if (w.pct === null) {
+        // Week with no data yet — show grey placeholder
+        return `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;opacity:0.35">
+            <div style="font-family:var(--font-head);font-size:9px;font-weight:800;color:var(--muted)">—</div>
+            <div style="width:28px;background:var(--bg3);border-radius:4px;height:50px"></div>
+            <div style="font-size:7px;color:var(--muted);text-align:center;font-family:var(--font-mono)">${w.label}</div>
+          </div>`;
+      }
+      const col = w.pct >= 80 ? '#00e5b0' : w.pct >= 50 ? '#fbbf24' : '#ef4444';
+      return `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px" title="${w.wkTraded} traded, ${w.wkMissed} missed">
+          <div style="font-family:var(--font-head);font-size:9px;font-weight:800;color:${col}">${w.pct}%</div>
+          <div style="width:28px;background:var(--bg3);border-radius:4px;height:50px;display:flex;align-items:flex-end;overflow:hidden">
+            <div style="width:100%;height:${w.pct}%;background:${col};border-radius:4px;transition:height 0.5s"></div>
+          </div>
+          <div style="font-size:7px;color:var(--muted);text-align:center;font-family:var(--font-mono)">${w.label}</div>
+          <div style="font-size:7px;color:var(--muted);text-align:center">${w.denominator>0?w.wkTraded+'/'+w.denominator:''}</div>
+        </div>`;
+    }).join('');
+
+    // ── NOP Date list ── recent → old ─────────────────────────────────
+    const nopListHtml = listWeekMondays.map((mon, wi) => {
+      const wkDates = weeks[mon] || [];
+      const d0 = new Date(mon+'T00:00:00');
+      const fe = new Date(mon+'T00:00:00'); fe.setDate(fe.getDate()+4);
+      const wkLabel = `${d0.getDate()} ${MN[d0.getMonth()]} → ${fe.getDate()} ${MN[fe.getMonth()]}`;
+      const tagged2 = wkDates.filter(d => adherenceData[d]).length;
+      const isOpen  = wi === 0;
+
+      // Skip weeks with no NOP dates
+      if (!wkDates.length) return '';
+
+      const datesHtml = wkDates.map(iso => {
+        const dt  = new Date(iso+'T00:00:00');
+        const entry = adherenceData[iso];
+        const hasReason = !!entry;
+        const r1color = !hasReason ? 'var(--muted)' : entry.reason1==='No Setup'?'#00e5b0':entry.reason1==='Setup Available'?'#ff6b35':'#7c5cfc';
+        const badge = hasReason
+          ? `<span style="font-size:9px;padding:3px 8px;border-radius:4px;background:${r1color}22;color:${r1color};font-weight:700;pointer-events:none">${entry.reason1}${entry.reason2?' → '+entry.reason2.split(' ')[0]:''}</span>`
+          : `<span style="font-size:9px;color:var(--muted);pointer-events:none">tap to log</span>`;
+        return `
+          <div data-nop-date="${iso}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:rgba(0,229,176,0.1)">
+            <span style="font-size:11px;color:var(--text);font-weight:600;pointer-events:none">${DAY[dt.getDay()]} ${dt.getDate()} ${MN[dt.getMonth()]}</span>
+            ${badge}
+          </div>`;
+      }).join('');
+
+      return `
+        <div style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <button data-wk-toggle="${wi}" style="width:100%;display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border:none;padding:10px 14px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--text)">
+            <span>📅 ${wkLabel}</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:9px;color:var(--muted)">${tagged2}/${wkDates.length} logged</span>
+              <span id="wkArrow_${wi}" style="font-size:12px;transition:transform 0.2s">${isOpen?'▴':'▾'}</span>
+            </span>
+          </button>
+          <div id="wkBody_${wi}" style="display:${isOpen?'block':'none'};padding:0 12px">${datesHtml}</div>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <!-- Weekly adherence chart -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">Weekly Adherence — Trades Taken ÷ Setup Available</div>
+        <div style="display:flex;gap:8px;align-items:flex-end;overflow-x:auto;padding-bottom:4px">${wkBarsHtml}</div>
+      </div>
+
+      <!-- R1 breakdown -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">No-Trade Reason</div>
+        ${r1Html}
+      </div>
+
+      ${r2Html ? `
+      <div style="margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Sub-Reason Breakdown</div>
+        ${r2Html}
+      </div>` : ''}
+
+      <!-- NOP date list -->
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">NOP Days (${totalNOP} total · ${tagged.length} logged)</div>
+      <div id="nopDateList">${nopListHtml}</div>
+    `;
+
+    // Bind week toggles
+    el.querySelectorAll('[data-wk-toggle]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const i = btn.dataset.wkToggle;
+        const body  = document.getElementById('wkBody_'+i);
+        const arrow = document.getElementById('wkArrow_'+i);
+        const open  = body.style.display !== 'none';
+        body.style.display  = open ? 'none' : 'block';
+        arrow.textContent   = open ? '▾' : '▴';
+      });
+    });
+
+    // Bind date taps
+    el.querySelectorAll('[data-nop-date]').forEach(row => {
+      row.addEventListener('click', function() {
+        openAdherenceModal(row.dataset.nopDate);
+      });
+    });
+  }
+
+  function openAdherenceModal(iso) {
+    adherenceEditDate = iso;
+    window._adherenceEditDate = iso; // expose for standalone script
+    const dt = new Date(iso+'T00:00:00');
+    const MN2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const DAY2 = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    document.getElementById('adherenceDateLabel').textContent = DAY2[dt.getDay()]+', '+dt.getDate()+' '+MN2[dt.getMonth()]+' '+dt.getFullYear();
+    // Pre-fill if exists
+    const entry = adherenceData[iso] || {};
+    const r1El = document.getElementById('adherenceReason1');
+    r1El.value = entry.reason1 || '';
+    updateAdherenceSubReason(entry.reason1, entry.reason2);
+    document.getElementById('adherenceModalOverlay').style.display = 'flex';
+  }
+
+  function updateAdherenceSubReason(r1, r2) {
+    const wrap = document.getElementById('adherenceReason2Wrap');
+    const sel  = document.getElementById('adherenceReason2');
+    const opts = ADHERENCE_SUB[r1];
+    if (opts) {
+      sel.innerHTML = '<option value="">— Select sub-reason —</option>' +
+        opts.map(o=>`<option value="${o}"${r2===o?' selected':''}>${o}</option>`).join('');
+      wrap.style.display = 'block';
+    } else {
+      wrap.style.display = 'none';
+      sel.innerHTML = '';
+    }
+  }
+  window.updateAdherenceSubReason = updateAdherenceSubReason;
+  window.openAdherenceModal = openAdherenceModal;
+  console.log('Module reached adherence section');
+
+  window._doSaveAdherence = async function(r1, r2) {
+    if (!adherenceEditDate) return;
+    adherenceData[adherenceEditDate] = { reason1: r1, ...(r2 && { reason2: r2 }) };
+    await saveAdherence();
+    renderAdherence();
+    showToast('Saved ✓');
+  };
+
+  window.saveAdherenceEntry = async function() {
+    const r1 = document.getElementById('adherenceReason1').value;
+    if (!r1) { showToast('Please select a reason'); return; }
+    const r2 = document.getElementById('adherenceReason2').value || '';
+    if (!adherenceEditDate) { showToast('No date selected'); return; }
+    adherenceData[adherenceEditDate] = { reason1: r1, ...(r2 && { reason2: r2 }) };
+    await saveAdherence();
+    document.getElementById('adherenceModalOverlay').style.display = 'none';
+    renderAdherence();
+    showToast('Saved ✓');
+  };
+
+  // Expose as _saveAdherenceReady for standalone script
+  window._saveAdherenceReady = window.saveAdherenceEntry;
+
+  window.doSaveAdherence = async function(r1, r2) {
+    if (!adherenceEditDate) { showToast('No date selected'); return; }
+    adherenceData[adherenceEditDate] = { reason1: r1, ...(r2 && { reason2: r2 }) };
+    await saveAdherence();
+    document.getElementById('adherenceModalOverlay').style.display = 'none';
+    renderAdherence();
+    showToast('Saved ✓');
+  };
+
   window.renderStats = function() {
     destroyCharts();
     const list = filterByPeriod(trades);
@@ -2955,7 +3389,8 @@
     el.innerHTML=`
       <!-- 1. Overview -->
       <div class="stats-section">
-        <div class="stats-section-title">Overview</div>
+        <div class="stats-section-title" data-collapse-id="overview" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Overview<span id="sarrow_overview" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_overview" style="display:none">
         <div class="stat-grid">
           <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Trades</div></div>
           <div class="stat-card"><div class="stat-val">${Object.keys(byLevel).length}</div><div class="stat-lbl">Levels</div></div>
@@ -2968,13 +3403,15 @@
 
       <!-- 2. Trade by Level -->
       <div class="stats-section">
-        <div class="stats-section-title">Trade by Level</div>
+        <div class="stats-section-title" data-collapse-id="trade_by_level" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trade by Level<span id="sarrow_trade_by_level" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trade_by_level" style="display:none">
         <div class="chart-box"><canvas id="chartLevel" height="160"></canvas></div>
       </div>
 
       <!-- 2b. Strategy -->
       <div class="stats-section">
-        <div class="stats-section-title">Strategy</div>
+        <div class="stats-section-title" data-collapse-id="strategy" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Strategy<span id="sarrow_strategy" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_strategy" style="display:none">
         <div class="chart-box"><canvas id="chartStrategy" height="160"></canvas></div>
         <div style="margin-top:8px">
           ${Object.entries(byStrategy).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`
@@ -2990,19 +3427,22 @@
 
       <!-- 3. Entry Type -->
       <div class="stats-section">
-        <div class="stats-section-title">Entry Type</div>
+        <div class="stats-section-title" data-collapse-id="entry_type" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Entry Type<span id="sarrow_entry_type" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_entry_type" style="display:none">
         <div class="chart-box"><canvas id="chartEntry" height="160"></canvas></div>
       </div>
 
       <!-- 4. Structure -->
       <div class="stats-section">
-        <div class="stats-section-title">Structure</div>
+        <div class="stats-section-title" data-collapse-id="structure" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Structure<span id="sarrow_structure" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_structure" style="display:none">
         <div class="chart-box"><canvas id="chartStruct" height="160"></canvas></div>
       </div>
 
       <!-- 5. Exit Type -->
       <div class="stats-section">
-        <div class="stats-section-title">Exit Type</div>
+        <div class="stats-section-title" data-collapse-id="exit_type" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Exit Type<span id="sarrow_exit_type" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_exit_type" style="display:none">
         <div style="margin-top:4px">
           ${exitSorted.map(([k,v])=>`
             <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
@@ -3017,7 +3457,8 @@
 
       <!-- 6. Trade Entry By Time -->
       <div class="stats-section">
-        <div class="stats-section-title">Trade Entry By Time</div>
+        <div class="stats-section-title" data-collapse-id="trade_entry_by_time" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trade Entry By Time<span id="sarrow_trade_entry_by_time" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trade_entry_by_time" style="display:none">
         <div class="chart-box"><canvas id="chartTime" height="160"></canvas></div>
         <div style="margin-top:8px">
           ${timeSorted.map(([k,v])=>`
@@ -3033,14 +3474,16 @@
 
       <!-- 7. Trading Day Gap -->
       <div class="stats-section">
-        <div class="stats-section-title">Trading Day Gap (weekends &amp; holidays excluded)</div>
+        <div class="stats-section-title" data-collapse-id="trading_day_gap_week" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trading Day Gap (weekends &amp; holidays excluded)<span id="sarrow_trading_day_gap_week" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trading_day_gap_week" style="display:none">
         <div class="chart-box" id="waitBox"><canvas id="chartWait" height="160"></canvas></div>
         <div id="waitBreakdown" style="margin-top:8px"></div>
       </div>
 
       <!-- 8. Trades by Day of Week -->
       <div class="stats-section">
-        <div class="stats-section-title">Trades by Day of Week</div>
+        <div class="stats-section-title" data-collapse-id="trades_by_day_of_wee" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trades by Day of Week<span id="sarrow_trades_by_day_of_wee" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trades_by_day_of_wee" style="display:none">
         <div class="chart-box"><canvas id="chartDay" height="160"></canvas></div>
         <div style="margin-top:8px">
           ${daySorted.map(([d,v])=>`
@@ -3056,26 +3499,30 @@
 
       <!-- 9. Trades by Week -->
       <div class="stats-section">
-        <div class="stats-section-title">Trades by Week</div>
+        <div class="stats-section-title" data-collapse-id="trades_by_week" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trades by Week<span id="sarrow_trades_by_week" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trades_by_week" style="display:none">
         <div class="chart-box"><canvas id="chartWeek" height="160"></canvas></div>
       </div>
 
       <!-- 10. Trades by Month -->
       <div class="stats-section">
-        <div class="stats-section-title">Trades by Month</div>
+        <div class="stats-section-title" data-collapse-id="trades_by_month" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trades by Month<span id="sarrow_trades_by_month" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trades_by_month" style="display:none">
         <div class="chart-box"><canvas id="chartMonth" height="160"></canvas></div>
       </div>
 
       <!-- 11. Trading Attendance -->
       <div class="stats-section">
-        <div class="stats-section-title">Trading Attendance</div>
+        <div class="stats-section-title" data-collapse-id="trading_attendance" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trading Attendance<span id="sarrow_trading_attendance" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trading_attendance" style="display:none">
         <div class="chart-box"><canvas id="chartAttendance" height="180"></canvas></div>
         <div id="attendanceBreakdown" style="margin-top:8px"></div>
       </div>
 
       <!-- 12. Trades by Sector -->
       <div class="stats-section">
-        <div class="stats-section-title">Trades by Sector</div>
+        <div class="stats-section-title" data-collapse-id="trades_by_sector" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Trades by Sector<span id="sarrow_trades_by_sector" style="font-size:11px;color:var(--muted)">▾</span></div>
+        <div id="sbody_trades_by_sector" style="display:none">
         <div class="chart-box"><canvas id="chartSector" height="160"></canvas></div>
         <div style="margin-top:8px">
           ${sectorSorted.map(([k,v])=>`
@@ -3087,9 +3534,11 @@
         </div>
       </div>
 
+
       <!-- 13. Exit Sequence -->
       <div class="stats-section">
-        <div class="stats-section-title">Exit by Trade Sequence</div>
+        <div class="stats-section-title" data-collapse-id="exit_by_trade_sequen" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center">Exit by Trade Sequence<span id="sarrow_exit_by_trade_sequen" style="font-size:11px;color:var(--muted)">▴</span></div>
+        <div id="sbody_exit_by_trade_sequen" style="display:block">
         <div id="exitSequenceTable" style="margin-top:6px"></div>
       </div>
 
@@ -3588,6 +4037,18 @@
       document.getElementById('waitBox').innerHTML='<div style="text-align:center;padding:18px;color:var(--muted);font-size:11px">Need 2+ trade dates for gap analysis</div>';
     }
 
+    // Bind stats section collapse toggles
+    document.querySelectorAll('[data-collapse-id]').forEach(hdr => {
+      hdr.addEventListener('click', function() {
+        const sid   = hdr.dataset.collapseId;
+        const body  = document.getElementById('sbody_' + sid);
+        const arrow = document.getElementById('sarrow_' + sid);
+        if (!body) return;
+        const open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : 'block';
+        if (arrow) arrow.textContent = open ? '▾' : '▴';
+      });
+    });
 
   };
 
@@ -4573,6 +5034,7 @@
   loadTrades();
   loadLeaves();
   loadEmotions();
+  loadAdherence();
   syncTargetFromFirestore();
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 
@@ -4640,6 +5102,18 @@
   // Bind setup analysis checklist
   bindSetupChecklist();
 
+    // Adherence modal bindings (in module so doSaveAdherence is accessible)
+    document.getElementById('adherenceModalClose')?.addEventListener('click', () => {
+      document.getElementById('adherenceModalOverlay').style.display = 'none';
+    });
+    document.getElementById('adherenceCancelBtn')?.addEventListener('click', () => {
+      document.getElementById('adherenceModalOverlay').style.display = 'none';
+    });
+    document.getElementById('adherenceReason1')?.addEventListener('change', function() {
+      updateAdherenceSubReason(this.value, '');
+    });
+    // Save button uses inline onclick — no addEventListener needed here
+
   // Bind checklist checkboxes
   ['chkValues','chkLayout','chkAlert'].forEach(id => {
     const el = document.getElementById(id);
@@ -4672,6 +5146,7 @@
     <button id="cancelEmotionEditBtn" style="width:100%;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--muted);cursor:pointer">Cancel</button>
   </div>
 </div>
+
 </body>
 <script>
   // Bind edit modal buttons (HTML is after module script, so bind here)
@@ -4685,5 +5160,22 @@
     var fab = document.getElementById('fabEmotionBtn');
     if (fab) fab.addEventListener('click', function() { window.scrollToEmotionForm(); });
   });
+</script>
+<script>
+  // Adherence save — standalone
+  function saveAdherenceEntry() {
+    var r1 = document.getElementById('adherenceReason1').value;
+    alert('saveAdherenceEntry: r1=' + r1 + ' _doSaveAdherence=' + (typeof window._doSaveAdherence) + ' editDate=' + window._adherenceEditDate);
+    if (!r1) { if(window.showToast) window.showToast('Please select a reason'); else alert('Please select a reason'); return; }
+    var r2 = '';
+    var wrap = document.getElementById('adherenceReason2Wrap');
+    if (wrap && wrap.style.display !== 'none') {
+      r2 = document.getElementById('adherenceReason2').value || '';
+    }
+    var editDate = window._adherenceEditDate;
+    if (!editDate) { if(window.showToast) window.showToast('No date selected'); return; }
+    document.getElementById('adherenceModalOverlay').style.display = 'none';
+    if (window._doSaveAdherence) window._doSaveAdherence(r1, r2);
+  }
 </script>
 </html>
