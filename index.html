@@ -3210,7 +3210,42 @@
     }).join('');
 
     el.innerHTML = `
-      <!-- Weekly adherence chart -->
+      <!-- Line chart: overall adherence trend -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">Overall Adherence Trend</div>
+
+        <!-- Metric cards -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:80px;background:var(--bg3);border-radius:10px;padding:10px 12px">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">Current Avg</div>
+            <div style="font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--accent)" id="adhCurAvg">—</div>
+          </div>
+          <div style="flex:1;min-width:80px;background:var(--bg3);border-radius:10px;padding:10px 12px">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">Best Week</div>
+            <div style="font-family:var(--font-head);font-size:20px;font-weight:800;color:#7c5cfc" id="adhBestWk">—</div>
+          </div>
+          <div style="flex:1;min-width:80px;background:var(--bg3);border-radius:10px;padding:10px 12px">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">Weeks Tracked</div>
+            <div style="font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--text)" id="adhWkCount">—</div>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div style="display:flex;gap:14px;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)">
+            <div style="width:12px;height:2px;background:#00e5b0;border-radius:1px"></div>Weekly %
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)">
+            <div style="width:12px;height:2px;background:#7c5cfc;border-radius:1px"></div>Running avg
+          </div>
+        </div>
+
+        <div style="position:relative;width:100%;height:200px">
+          <canvas id="adhLineChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Weekly bar chart -->
       <div style="margin-bottom:14px">
         <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">Weekly Adherence — Trades Taken ÷ Setup Available</div>
         <div style="display:flex;gap:8px;align-items:flex-end;overflow-x:auto;padding-bottom:4px">${wkBarsHtml}</div>
@@ -3232,6 +3267,114 @@
       <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">NOP Days (${totalNOP} total · ${tagged.length} logged)</div>
       <div id="nopDateList">${nopListHtml}</div>
     `;
+
+    // Draw line chart after DOM is ready
+    setTimeout(() => {
+      const canvas = document.getElementById('adhLineChart');
+      if (!canvas) return;
+
+      // Build per-week data (old→new)
+      const chartLabels = allWeekMondays.map((mon, i) => 'W' + (i + 1));
+      const chartPct = allWeekMondays.map(mon => {
+        const wkDates2 = weeks[mon] || [];
+        const wkTraded2 = [...tradedDates].filter(d => {
+          const dm = new Date(d+'T00:00:00');
+          const diff2 = dm.getDay()===0?-6:1-dm.getDay();
+          const m = new Date(dm); m.setDate(dm.getDate()+diff2);
+          return localISO(m) === mon;
+        }).length;
+        const wkMissed2 = wkDates2.filter(d => adherenceData[d]?.reason1 === 'Setup Available').length;
+        const denom = wkTraded2 + wkMissed2;
+        return denom > 0 ? Math.round(wkTraded2 / denom * 100) : null;
+      });
+
+      // Running cumulative average
+      let rSum = 0, rCnt = 0;
+      const runAvg = chartPct.map(v => {
+        if (v !== null) { rSum += v; rCnt++; }
+        return rCnt > 0 ? Math.round(rSum / rCnt) : null;
+      });
+
+      // Update metric cards
+      const tracked = chartPct.filter(v => v !== null);
+      const curAvg2 = runAvg[runAvg.length - 1];
+      const bestVal = tracked.length ? Math.max(...tracked) : null;
+      const bestIdx = bestVal !== null ? chartPct.indexOf(bestVal) : -1;
+      const adhCurAvg = document.getElementById('adhCurAvg');
+      const adhBestWk = document.getElementById('adhBestWk');
+      const adhWkCnt  = document.getElementById('adhWkCount');
+      if (adhCurAvg) adhCurAvg.textContent = curAvg2 !== null ? curAvg2 + '%' : '—';
+      if (adhBestWk) adhBestWk.textContent = bestVal !== null ? bestVal + '% (W'+(bestIdx+1)+')' : '—';
+      if (adhWkCnt)  adhWkCnt.textContent  = tracked.length;
+
+      const existing = Chart.getChart('adhLineChart');
+      if (existing) existing.destroy();
+
+      new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [
+            {
+              label: 'Weekly %',
+              data: chartPct,
+              borderColor: '#00e5b0',
+              backgroundColor: '#00e5b018',
+              pointBackgroundColor: chartPct.map(v => v === null ? 'transparent' : '#00e5b0'),
+              pointRadius: chartPct.map(v => v === null ? 0 : 4),
+              pointHoverRadius: 6,
+              borderWidth: 2,
+              tension: 0.35,
+              spanGaps: false,
+              fill: true,
+            },
+            {
+              label: 'Running avg',
+              data: runAvg,
+              borderColor: '#7c5cfc',
+              backgroundColor: 'transparent',
+              pointRadius: 0,
+              borderWidth: 2,
+              borderDash: [5, 4],
+              tension: 0.35,
+              spanGaps: true,
+              fill: false,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  if (ctx.datasetIndex === 0) return ctx.raw !== null ? 'Week: ' + ctx.raw + '%' : 'No data';
+                  return 'Running avg: ' + (ctx.raw !== null ? ctx.raw + '%' : '—');
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#1e2d45' },
+              ticks: { color: '#6b7a99', font: { size: 9 }, maxRotation: 0 }
+            },
+            y: {
+              min: 0, max: 110,
+              grid: { color: '#1e2d45' },
+              ticks: {
+                color: '#6b7a99',
+                font: { size: 9 },
+                callback: v => v + '%',
+                stepSize: 25
+              }
+            }
+          }
+        }
+      });
+    }, 50);
 
     // Bind week toggles
     el.querySelectorAll('[data-wk-toggle]').forEach(btn => {
