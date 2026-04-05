@@ -3021,11 +3021,10 @@
     const leaveSet = new Set((Array.isArray(leaves)?leaves:[]).map(l=>String(l.date).trim()));
     const tradeSet = new Set((Array.isArray(trades)?trades:[]).map(t=>String(t.date).trim()));
     const result   = [];
-    // Range: first trade date → last trade date
     const tradeDates = [...tradeSet].filter(Boolean).sort();
     if (!tradeDates.length) return [];
     let d = new Date(tradeDates[0] + 'T00:00:00');
-    const end = new Date(localISO(new Date()) + 'T00:00:00'); // end = today
+    const end = new Date(localISO(new Date()) + 'T00:00:00');
     while (d <= end) {
       const iso = localISO(d);
       const dow = d.getDay();
@@ -3034,7 +3033,7 @@
       }
       d.setDate(d.getDate() + 1);
     }
-    return result.reverse(); // recent first
+    return result.reverse();
   }
 
   function groupByWeek(dates) {
@@ -3053,14 +3052,17 @@
   }
 
   function getAllWeekMondays(fromIso, toIso) {
-    // Returns all Monday dates (ISO) from the week containing fromIso to toIso
     const result = [];
     const d = new Date(fromIso + 'T00:00:00');
     const dow = d.getDay();
     const diff = dow === 0 ? -6 : 1 - dow;
     d.setDate(d.getDate() + diff); // move to Monday of first week
-    const end = new Date(toIso + 'T00:00:00');
-    while (d <= end) {
+    // End = Monday of the week containing toIso
+    const endD = new Date(toIso + 'T00:00:00');
+    const endDow = endD.getDay();
+    const endDiff = endDow === 0 ? -6 : 1 - endDow;
+    endD.setDate(endD.getDate() + endDiff); // Monday of toIso's week
+    while (d <= endD) {
       result.push(localISO(new Date(d)));
       d.setDate(d.getDate() + 7);
     }
@@ -3160,18 +3162,26 @@
     }).join('');
 
     // ── NOP Date list ── recent → old ─────────────────────────────────
+    // Current week's Monday
+    const todayForWk = new Date();
+    const todayDowWk = todayForWk.getDay();
+    const curMon = new Date(todayForWk);
+    curMon.setDate(todayForWk.getDate() + (todayDowWk === 0 ? -6 : 1 - todayDowWk));
+    const curMonIso = localISO(curMon);
+
     const nopListHtml = listWeekMondays.map((mon, wi) => {
       const wkDates = weeks[mon] || [];
       const d0 = new Date(mon+'T00:00:00');
       const fe = new Date(mon+'T00:00:00'); fe.setDate(fe.getDate()+4);
       const wkLabel = `${d0.getDate()} ${MN[d0.getMonth()]} → ${fe.getDate()} ${MN[fe.getMonth()]}`;
       const tagged2 = wkDates.filter(d => adherenceData[d]).length;
-      const isOpen  = wi === 0;
+      const isCurrentWk = mon === curMonIso;
+      const isOpen = wi === 0;
 
-      // Skip weeks with no NOP dates
-      if (!wkDates.length) return '';
+      // Skip empty weeks unless it's the current week
+      if (!wkDates.length && !isCurrentWk) return '';
 
-      const datesHtml = wkDates.map(iso => {
+      const datesHtml = wkDates.length ? wkDates.map(iso => {
         const dt  = new Date(iso+'T00:00:00');
         const entry = adherenceData[iso];
         const hasReason = !!entry;
@@ -3184,7 +3194,7 @@
             <span style="font-size:11px;color:var(--text);font-weight:600;pointer-events:none">${DAY[dt.getDay()]} ${dt.getDate()} ${MN[dt.getMonth()]}</span>
             ${badge}
           </div>`;
-      }).join('');
+      }).join('') : `<div style="padding:10px 4px;font-size:11px;color:var(--muted);text-align:center">✅ All days traded or accounted for this week</div>`;
 
       return `
         <div style="margin-bottom:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
