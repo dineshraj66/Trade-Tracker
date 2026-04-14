@@ -1178,14 +1178,23 @@
       <!-- Trading day summary cards -->
       <div id="tradingDaySummary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px"></div>
 
-      <!-- Sliding Calendar -->
-      <div id="calendarView" style="display:none;margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <button id="calPrevBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:4px 12px;cursor:pointer">‹</button>
-          <div id="calMonthTitle" style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent)"></div>
-          <button id="calNextBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:4px 12px;cursor:pointer">›</button>
+      <!-- Sliding Calendar — collapsible -->
+      <div style="margin-bottom:10px">
+        <button onclick="(function(){var b=document.getElementById('calendarView');var a=document.getElementById('calArrow');var o=b.style.display!=='none';b.style.display=o?'none':'block';a.textContent=o?'▾':'▴';})()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--text)">
+          <span style="display:flex;align-items:center;gap:8px">
+            📅 Month Calendar
+            <button id="calendarToggleBtn" style="background:rgba(0,229,176,0.12);border:1px solid rgba(0,229,176,0.3);border-radius:6px;color:var(--accent);font-size:11px;padding:2px 8px;cursor:pointer" onclick="event.stopPropagation()">Open</button>
+          </span>
+          <span id="calArrow" style="font-size:14px">▾</span>
+        </button>
+        <div id="calendarView" style="display:none;margin-top:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <button id="calPrevBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:4px 12px;cursor:pointer">‹</button>
+            <div id="calMonthTitle" style="font-family:var(--font-head);font-size:14px;font-weight:800;color:var(--accent)"></div>
+            <button id="calNextBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:16px;padding:4px 12px;cursor:pointer">›</button>
+          </div>
+          <div id="calMonthView"></div>
         </div>
-        <div id="calMonthView"></div>
       </div>
 
       <!-- Leave list — collapsible -->
@@ -1197,16 +1206,37 @@
         <div id="holidayList" style="display:none;margin-top:6px"></div>
       </div>
 
-      <!-- Week Projection -->
-      <div style="margin-bottom:16px">
-        <div id="weekProjTitle" style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:0.5px"></div>
-        <div id="homeWeekProjection"></div>
+      <!-- Week Projection — collapsible -->
+      <div style="margin-bottom:10px">
+        <button onclick="(function(){var b=document.getElementById('weekProjBody');var a=document.getElementById('weekProjArrow');var o=b.style.display!=='none';b.style.display=o?'none':'block';a.textContent=o?'▾':'▴';})()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--text)">
+          <span id="weekProjTitle">📆 Week Projection 2026</span>
+          <span id="weekProjArrow" style="font-size:14px">▾</span>
+        </button>
+        <div id="weekProjBody" style="display:none;margin-top:6px">
+          <div id="homeWeekProjection"></div>
+        </div>
       </div>
 
-      <!-- Monthly Trading Days Chart -->
+      <!-- Monthly Trading Days Chart — collapsible -->
+      <div style="margin-bottom:10px">
+        <button onclick="(function(){var b=document.getElementById('monthlyChartBody');var a=document.getElementById('monthlyChartArrow');var o=b.style.display!=='none';b.style.display=o?'none':'block';a.textContent=o?'▾':'▴';})()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--text)">
+          <span id="monthlyChartTitle">📊 Trading Days by Month</span>
+          <span id="monthlyChartArrow" style="font-size:14px">▾</span>
+        </button>
+        <div id="monthlyChartBody" style="display:none;margin-top:6px">
+          <div class="chart-box"><canvas id="chartMonthlyTradingDays" height="140"></canvas></div>
+        </div>
+      </div>
+
+      <!-- NSE Holidays by Month — collapsible -->
       <div style="margin-bottom:80px">
-        <div id="monthlyChartTitle" style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:0.5px"></div>
-        <div class="chart-box"><canvas id="chartMonthlyTradingDays" height="140"></canvas></div>
+        <button onclick="(function(){var b=document.getElementById('nseHolidayChartBody');var a=document.getElementById('nseHolidayArrow');var o=b.style.display!=='none';b.style.display=o?'none':'block';a.textContent=o?'▾':'▴';})()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:9px 14px;cursor:pointer;font-family:var(--font-head);font-size:11px;font-weight:700;color:var(--text)">
+          <span>🏛 NSE Holidays by Month</span>
+          <span id="nseHolidayArrow" style="font-size:14px">▾</span>
+        </button>
+        <div id="nseHolidayChartBody" style="display:none;margin-top:6px">
+          <div class="chart-box"><canvas id="chartNseHolidays" height="140"></canvas></div>
+        </div>
       </div>
 
     </div>
@@ -2472,6 +2502,7 @@
     // Full unified list
     renderHomeWeekProjection();
     renderMonthlyTradingDays();
+    renderNseHolidayChart();
     if (calendarVisible) renderSlideCalendar();
     const listEl = document.getElementById('holidayList');
     if (!listEl) return;
@@ -2521,6 +2552,52 @@
   }
 
   /* ── Render Home ─────────────────────────────── */
+  function renderNseHolidayChart() {
+    const canvas = document.getElementById('chartNseHolidays');
+    if (!canvas) return;
+    const yr = new Date().getFullYear();
+    const nseArr = yr === 2027 ? NSE_HOLIDAYS_2027 : NSE_HOLIDAYS_2026;
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const counts = new Array(12).fill(0);
+    nseArr.forEach(h => {
+      const mo = parseInt(h.date.split('-')[1]) - 1;
+      if (mo >= 0 && mo < 12) counts[mo]++;
+    });
+    const ex = Chart.getChart('chartNseHolidays');
+    if (ex) ex.destroy();
+    const nsePl = { id:'nseHolDL', afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      chart.data.datasets.forEach((ds,i) => {
+        chart.getDatasetMeta(i).data.forEach((bar,idx) => {
+          const v = ds.data[idx]; if (!v) return;
+          ctx.save(); ctx.fillStyle='#e8edf5'; ctx.font='bold 9px Space Mono,monospace';
+          ctx.textAlign='center'; ctx.textBaseline='bottom';
+          ctx.fillText(v, bar.x, bar.y-2); ctx.restore();
+        });
+      });
+    }};
+    new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: MN,
+        datasets: [{ data: counts, borderRadius: 5,
+          backgroundColor: counts.map(v => v === 0 ? '#1e2d45' : v >= 3 ? '#ef4444' : v >= 2 ? '#fbbf24' : '#7c5cfc')
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.raw + ' holiday' + (ctx.raw !== 1 ? 's' : '') }}
+        },
+        scales: {
+          x: { ticks: { color:'#6b7a99', font:{ size:9 } }, grid: { color:'#1e2d45' } },
+          y: { ticks: { color:'#6b7a99', font:{ size:9 }, stepSize:1 }, grid: { color:'#1e2d45' }, beginAtZero:true }
+        },
+        responsive: true
+      },
+      plugins: [nsePl]
+    });
+  }
+
   window.renderHome = function() {
     renderHolidays();
     const total     = trades.length;
