@@ -1121,11 +1121,11 @@
 
 <!-- ─── Tabs ────────────────────────────────────── -->
 <nav class="tabs">
-  <button class="tab-btn" onclick="switchTab('home')"   id="tab-home"  >🏠 Home</button>
+  <button class="tab-btn" onclick="switchTab('emotions')" id="tab-emotions">🧠 Mind</button>
   <button class="tab-btn" onclick="switchTab('stats')"  id="tab-stats" >📊 Stats</button>
   <button class="tab-btn" onclick="switchTab('trades')" id="tab-trades">📋 Trades</button>
-  <button class="tab-btn" onclick="switchTab('emotions')" id="tab-emotions">🧠 Mind</button>
-  <button class="tab-btn" onclick="switchTab('week')" id="tab-week">📅 Week</button>
+  <button class="tab-btn" onclick="switchTab('home')"   id="tab-home"  >📅 Calendar</button>
+  <button class="tab-btn" onclick="switchTab('week')" id="tab-week">📋 Week</button>
 </nav>
 
 <!-- ─── Home Page ────────────────────────────────── -->
@@ -1366,9 +1366,13 @@
         <input type="checkbox" id="chkLayout" >
         <span style="font-size:11px;color:var(--text)">Switch Layout</span>
       </label>
-      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer">
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer">
         <input type="checkbox" id="chkAlert" >
         <span style="font-size:11px;color:var(--text)">Deactivate Alert / Collapse Watchlist</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer">
+        <input type="checkbox" id="chkAudio" >
+        <span style="font-size:11px;color:var(--text)">Turn On Laptop Audio for Timer</span>
       </label>
       <div id="tradeControlMsg" style="display:none;background:rgba(0,229,176,0.1);border:1px solid rgba(0,229,176,0.3);border-radius:8px;padding:10px;text-align:center;font-size:11px;font-weight:600;color:var(--accent);line-height:1.5">
         ✅ Your trade is in control<br>Just relax and monitor every 15 mins
@@ -1644,7 +1648,7 @@
   let db        = null;
   let trades    = [];
   let emotionsLoaded = false;
-  let activeEmotionView = 'post'; // 'post' or 'live'
+  let activeEmotionView = 'live'; // 'post' or 'live'
   let editingId = null;
   let currentPeriod = 'all';
   let charts = {};
@@ -1956,6 +1960,8 @@
       // Destroy chart first so it redraws at correct size
       const ec = Chart.getChart('chartEmotions');
       if (ec) { ec.destroy(); }
+      // Default to live view
+      window.setEmotionView('live');
       // Small delay so the page is visible before chart draws
       setTimeout(renderEmotions, 50);
     }
@@ -4205,7 +4211,7 @@
 
   };
 
-  let selectedPhase   = 'post';
+  let selectedPhase   = 'live';
   let selectedEmotion = null;
 
   function applyPhaseUI(phase) {
@@ -4221,7 +4227,7 @@
     const cl = document.getElementById('liveChecklist');
     if (cl) cl.style.display = phase === 'live' ? 'block' : 'none';
     if (phase === 'live') startMotivationRotation(); else stopMotivationRotation();
-    ['chkValues','chkLayout','chkAlert'].forEach(id => {
+    ['chkValues','chkLayout','chkAlert','chkAudio'].forEach(id => {
       const el = document.getElementById(id); if (el) el.checked = false;
     });
     const msg = document.getElementById('tradeControlMsg');
@@ -4487,7 +4493,7 @@
   }
 
   window.updateChecklist = function() {
-    const allChecked = ['chkValues','chkLayout','chkAlert'].every(id => {
+    const allChecked = ['chkValues','chkLayout','chkAlert','chkAudio'].every(id => {
       const el = document.getElementById(id); return el && el.checked;
     });
     const msg = document.getElementById('tradeControlMsg');
@@ -4500,7 +4506,7 @@
     document.getElementById('eNotes').value = '';
     const _ec = document.getElementById('eCustom'); if(_ec){_ec.value='';_ec.style.display='none';}
     document.querySelectorAll('.emotion-chip').forEach(b => b.classList.remove('active'));
-    ['chkValues','chkLayout','chkAlert'].forEach(id => {
+    ['chkValues','chkLayout','chkAlert','chkAudio'].forEach(id => {
       const el = document.getElementById(id); if (el) el.checked = false;
     });
     const msg = document.getElementById('tradeControlMsg');
@@ -5183,7 +5189,7 @@
   /* ── Init ────────────────────────────────────── */
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
-  switchTab('home');
+  switchTab('emotions');
   loadTrades();
   loadLeaves();
   loadEmotions();
@@ -5268,7 +5274,7 @@
     // Save button uses inline onclick — no addEventListener needed here
 
   // Bind checklist checkboxes
-  ['chkValues','chkLayout','chkAlert'].forEach(id => {
+  ['chkValues','chkLayout','chkAlert','chkAudio'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('change', () => window.updateChecklist());
   });
