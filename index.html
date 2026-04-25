@@ -2181,6 +2181,7 @@
       const ws = new Date(d), we = new Date(d); we.setDate(d.getDate()+4);
       let td = 0;
       const interruptDays = [];
+      const midWeekInterrupts = [];
       const DAY_SHORT = ['Mon','Tue','Wed','Thu','Fri'];
       for (let i=0; i<5; i++) {
         const day = new Date(d); day.setDate(d.getDate()+i);
@@ -2188,14 +2189,18 @@
         const isHoliday = allNSE.has(iso);
         const isLeave   = leaveSet.has(iso);
         if (!isHoliday && !isLeave) td++;
-        else interruptDays.push(DAY_SHORT[i]);
+        else {
+          interruptDays.push(DAY_SHORT[i]);
+          if (i >= 1 && i <= 3) midWeekInterrupts.push(DAY_SHORT[i]); // Tue/Wed/Thu only
+        }
       }
       const mo = ws.getMonth();
       const wsISO = localISO(ws), weISO = localISO(we);
       const isCurrent = todayISO >= wsISO && todayISO <= weISO;
       const isFuture  = wsISO > todayISO;
       weeks.push({ label: `W${String(wNum).padStart(2,'0')} ${MN[mo]}`, td,
-        interrupted: interruptDays.length > 0, interruptDays,
+        interrupted: midWeekInterrupts.length > 0, interruptDays: midWeekInterrupts,
+        allMissingDays: interruptDays,
         start: wsISO.slice(5), end: weISO.slice(5), isCurrent,
         isUpcoming: false });
       wNum++; d.setDate(d.getDate()+7);
@@ -2229,8 +2234,10 @@
       const badge = w.isCurrent ? '<span style="font-size:8px;background:var(--accent);color:#000;border-radius:4px;padding:1px 4px;font-weight:700;margin-left:4px">NOW</span>'
                   : w.isUpcoming ? '<span style="font-size:8px;background:#7c5cfc;color:#fff;border-radius:4px;padding:1px 4px;font-weight:700;margin-left:4px">NEXT</span>'
                   : '';
-      const interruptSymbol = w.interrupted
-        ? `<span style="font-size:9px;color:#fbbf24;margin-left:5px;font-family:var(--font-mono);font-weight:700">⚡${w.interruptDays.join(',')}</span>`
+      const interruptSymbol = w.allMissingDays && w.allMissingDays.length > 0
+        ? w.interrupted
+          ? `<span style="font-size:9px;color:#fbbf24;margin-left:5px;font-family:var(--font-mono);font-weight:700">⚡${w.interruptDays.join(',')}</span>`
+          : `<span style="font-size:9px;color:#fbbf24;margin-left:5px;font-family:var(--font-mono);font-weight:700">${w.allMissingDays.join(',')}</span>`
         : '';
       return `
         <div id="${rowId}" style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border);${highlight}">
